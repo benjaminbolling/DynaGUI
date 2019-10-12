@@ -1,0 +1,19 @@
+IamaDynaGUIalarmFile
+##IamYourSeparator##
+r3-319l/dia/tco-01/temperature
+r3-319l/dia/tco-02/temperature
+r1-101/dia/bpm-01/xmeanpossa
+r1-101/dia/bpm-02/xmeanpossa
+r1-103/dia/bpm-01/ymeanpossa
+##IamYourSeparator##
+R3 319 TCO 01 temperature
+R3 319 TCO 02 temperature
+R1 101 BPM 01 x-pos
+R1 101 BPM 02 x-pos
+R1 102 BPM 02 y-pos
+##IamYourSeparator##
+36.0
+38.0
+40.0
+##IamYourSeparator##
+3
