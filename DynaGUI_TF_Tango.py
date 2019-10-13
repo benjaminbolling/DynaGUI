@@ -202,13 +202,12 @@ class Dialog(QtGui.QDialog):
 
     def getallDevs(self):
         # Construct all necessary buttons
-        self.BPMproxies = self.devlist
         
         rowcount = -1
         colcount = 0
         
         # Here the construction begins for all the pushbuttons, and we make them all belong to the groupbox.
-        for index in self.BPMproxies:
+        for index in self.devlist:
             rowcount += 1
             button = QtGui.QPushButton(index, self.groupBox)
             self.sublayout.addWidget(button,rowcount,colcount,1,1)
