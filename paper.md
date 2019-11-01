@@ -1,5 +1,5 @@
 ---
-title: 'Gala: A Python package for galactic dynamics'
+title: 'The DynaGUI package'
 tags:
   - Python
   - particle accelerator
@@ -10,8 +10,13 @@ tags:
 authors:
   - name: Benjamin Edward Bolling
     orcid: 0000-0002-6650-5365
-    affiliation: European Spallation Source
+    affiliation: "1, 2"
 date: 1 November 2019
+affiliations:
+ - name: European Spallation Source ERIC
+   index: 1
+ - name: MAX IV Laboratory
+   index: 2
 bibliography: paper.bib
 ---
 
