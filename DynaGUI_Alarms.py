@@ -13,15 +13,16 @@ try:
     from PyQt5 import QtCore
 except:
     from PyQt4 import QtCore, QtGui
-
-import PyTango as PT
 import os
 from datetime import datetime
+from functools import partial
 from time import sleep
 import sys
 class Dialog(QtGui.QDialog):
-    def __init__(self, inp):
+    def __init__(self, inp, ctrl_library):
         QtGui.QDialog.__init__(self)
+        self.ctrl_library = ctrl_library
+        self.setWindowTitle("DynaGUI Alarms")
         if inp == 0:
             loadflag = 0
         else:
@@ -45,14 +46,13 @@ class Dialog(QtGui.QDialog):
             
             self.devlims = [36,
                             38,
-                            40]
+                            40,
+                            100]
             
             self.Nrows = 20
         self.reloadflag = 0
         self.maxsize = 0
         self.timerinterval = 30 # seconds
-        
-        self.setWindowTitle("DynaGUI Alarms")
         
         # Construct the toplayout and make it stretchable
         self.toplayout = QtGui.QVBoxLayout(self)
@@ -69,10 +69,10 @@ class Dialog(QtGui.QDialog):
         self.listbtn.setEnabled(True)
         self.horizlayout0.addWidget(self.listbtn)
         try:
-            self.doublevalidator = QtGui.QDoubleValidator(-float('inf'),float('inf'),5)
-        except:
             self.doublevalidator = QtGui2.QDoubleValidator(-float('inf'),float('inf'),5)
-        
+        except:
+            self.doublevalidator = QtGui.QDoubleValidator(-float('inf'),float('inf'),5)
+            
         # Now we construct the sublayout which will consist of the dynamically constructed buttons of the lists defined above (in example; list1 or list2)
         self.sublayout = QtGui.QGridLayout()
         self.toplayout.addLayout(self.sublayout)
@@ -99,14 +99,20 @@ class Dialog(QtGui.QDialog):
         # Construct the load and save buttons, connect them to their functions and add them to their horizontal container
         self.loadbtn = QtGui.QPushButton("Load")
         self.savebtn = QtGui.QPushButton("Save")
+        self.selectallbtn = QtGui.QPushButton("Select All")
+        self.unselectallbtn = QtGui.QPushButton("Unselect All")
         self.loadbtn.clicked.connect(self.loadbtnclicked)
         self.loadbtn.setShortcut("Ctrl+o")
         self.loadbtn.setToolTip("Load a configuration (ctrl+o).")
         self.savebtn.clicked.connect(self.savebtnclicked)
         self.savebtn.setShortcut("Ctrl+s")
         self.savebtn.setToolTip("Save a configuration (ctrl+s).")
+        self.selectallbtn.clicked.connect(self.selectallbtnclicked)
+        self.unselectallbtn.clicked.connect(self.unselectallbtnclicked)
         self.horizlayout1.addWidget(self.loadbtn)
         self.horizlayout1.addWidget(self.savebtn)
+        self.horizlayout1.addWidget(self.selectallbtn)
+        self.horizlayout1.addWidget(self.unselectallbtn)
         
         self.startstopbtn = QtGui.QPushButton("Not running. Press to activate.")
         self.startstopbtn.clicked.connect(self.startstopclicked)
@@ -117,7 +123,15 @@ class Dialog(QtGui.QDialog):
         
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.statuscheck)
+    
+    def selectallbtnclicked(self):
+        for item in self.groupBox.findChildren(QtGui.QCheckBox):
+            item.setChecked(True)
         
+    def unselectallbtnclicked(self):
+        for item in self.groupBox.findChildren(QtGui.QCheckBox):
+            item.setChecked(False)
+    
     def savebtnclicked(self):
         nameoffile = QtGui.QFileDialog.getSaveFileName(self, 'Save to File')
         if not nameoffile:
@@ -138,7 +152,6 @@ class Dialog(QtGui.QDialog):
             self.loadfile(nameoffile,0)
             
     def loadfile(self,nameoffile,inp2):
-            print(nameoffile)
             file = open(nameoffile, 'r')
             splitToLoad = file.read()
             splitToLoad = splitToLoad.split("##IamYourSeparator##")
@@ -147,6 +160,9 @@ class Dialog(QtGui.QDialog):
                 identifier.remove("")
             if identifier[0] == 'IamaDynaGUIalarmFile':
                 try:
+                    if inp2 == 0:
+                        # Destroy the current buttons.
+                        self.killdynamicbuttongroup()
                     devdoms = splitToLoad[1].split("\n")
                     while("" in devdoms): # Get rid of empty strings
                         devdoms.remove("")
@@ -162,16 +178,12 @@ class Dialog(QtGui.QDialog):
                     self.devdesc = devdesc
                     self.devlims = devvlims
                     self.Nrows = float(Nrows)
-                    if inp2 == 0:
-                        self.bottomlabel.setText("Loaded configuration.")
-                        # Destroy the current buttons.
-                        self.killdynamicbuttongroup()
-                        # All buttons are gone, so lets construct the new buttons.
-                        self.getallDevs()
-                        # The layout should be minimal, so make it unrealistically small (x=10, y=10 [px]) and then resize to minimum.
-                        self.setMaximumSize(10,10)
-                        self.resize(self.sizeHint().width(), self.sizeHint().height())
-                        self.bottomlabel.setToolTip("Loaded configuration from file: "+nameoffile)
+                    # All buttons are gone, so lets construct the new buttons.
+                    self.getallDevs()
+                    # The layout should be minimal, so make it unrealistically small (x=10, y=10 [px]) and then resize to minimum.
+                    self.resize(10,10)
+                    self.resize(self.sizeHint().width(), self.sizeHint().height())
+                    self.bottomlabel.setToolTip("Loaded configuration from file: "+nameoffile)
                 except:
                     if inp2 == 0:
                         self.bottomlabel.setText("Conf. file error: Missing separator(s).")
@@ -185,6 +197,16 @@ class Dialog(QtGui.QDialog):
             item = self.sublayout.itemAt(i)
             if isinstance(item, QtGui.QWidgetItem):
                 item.widget().close()
+        for item in self.groupBox.findChildren(QtGui.QLineEdit):
+            self.sublayout.removeWidget(item)
+            item.deleteLater()
+        for item in self.groupBox.findChildren(QtGui.QCheckBox):
+            self.sublayout.removeWidget(item)
+            item.deleteLater()
+        for item in self.groupBox.findChildren(QtGui.QLabel):
+            self.sublayout.removeWidget(item)
+            item.deleteLater()
+        
 
     def getallDevs(self):
         rowcount = -1
@@ -199,12 +221,14 @@ class Dialog(QtGui.QDialog):
                 textbox = QtGui.QLineEdit(str(self.devlims[numm]), self.groupBox)
             except:
                 textbox = QtGui.QLineEdit(str(0), self.groupBox)
+                self.devlims.append(0)
             textbox.setValidator(self.doublevalidator)
             combobox = QtGui.QComboBox(self.groupBox)
             combobox.addItem("<")
             combobox.addItem(">")
             
             textbox.setEnabled(True)
+            textbox.textChanged.connect(partial(self.lineeditedited,textbox))
             label = QtGui.QLabel("-",self.groupBox)
             self.sublayout.addWidget(button,rowcount,colcount,1,1)
             self.sublayout.addWidget(label,rowcount,colcount+1,1,1)
@@ -224,6 +248,13 @@ class Dialog(QtGui.QDialog):
         
         # Get the statuses
         self.statuscheck()
+        
+    def lineeditedited(self,lineedit):
+        n = -1
+        for item in self.groupBox.findChildren(QtGui.QLineEdit):
+            n += 1
+            if lineedit is item:
+                self.devlims[n] = item.text()
     
     def startstopclicked(self):
         if self.timer.isActive():
@@ -249,11 +280,14 @@ class Dialog(QtGui.QDialog):
             splitt = str(item.toolTip()).split("/")
             attr = splitt[len(splitt)-1]
             proxy = str("/".join(splitt[0:len(splitt)-1]))
-            prox = [PT.DeviceProxy(str(proxy))]
-            lorm = str(combos[ind].currentText())
             
-            for bd in prox:
-                val = bd.read_attribute(attr).value
+            if self.ctrl_library == "Tango":
+                prox = [PT.DeviceProxy(str(proxy))]
+                for bd in prox:
+                    val = bd.read_attribute(attr).value
+            elif self.ctrl_library == "Randomizer":
+                val = random.random()
+            lorm = str(combos[ind].currentText())
             labels[ind].setText(str(val))
             if item.isChecked():
                 if lorm == "<":
@@ -339,7 +373,6 @@ class listbtnGUI(QtGui.QDialog):
         self.newlistDevs = textDevs.split()
         self.newlistDescs = textDescs.split('\n')
         
-        
         # Check if all devices have domain, description and limits defined:
         if abs(len(self.newlistDevs)-len(self.newlistDescs)) == 0:
             self.parent.timerinterval = self.textboxTmr.value()
@@ -362,10 +395,22 @@ class listbtnGUI(QtGui.QDialog):
 
 if __name__ == '__main__':
     try:
-        inp = sys.argv[1]
+        ctrl_library = sys.argv[1]
+        inp = sys.argv[2]
     except:
         inp = 0
     app = QtGui.QApplication(sys.argv)
-    window = Dialog(inp)
-    window.show()
-    sys.exit(app.exec_())
+    goflag = 1
+    if ctrl_library == "Tango":
+        import PyTango as PT
+    elif ctrl_library == "EPICS":
+        print("Not yet implemented.")
+        goflag = 0
+    elif ctrl_library == "Randomizer":
+        import random
+    else:
+        goflag = 0
+    if goflag == 1:
+        window = Dialog(inp,ctrl_library)
+        window.show()
+        sys.exit(app.exec_())

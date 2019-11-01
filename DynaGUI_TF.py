@@ -9,13 +9,13 @@ try:
     from PyQt5 import QtCore
 except:
     from PyQt4 import QtCore, QtGui
-
-import PyTango as PT
 import time
 import sys
 class Dialog(QtGui.QDialog):
-    def __init__(self, inp):
+    def __init__(self, inp, ctrl_library):
         QtGui.QDialog.__init__(self)
+        self.setWindowTitle("DynaGUI TF")
+        self.ctrl_library = ctrl_library
         if inp == 0:
             loadflag = 0
         else:
@@ -53,7 +53,10 @@ class Dialog(QtGui.QDialog):
         self.reloadflag = 0
         self.showallhideflag = False
         
-        self.setWindowTitle("DynaGUI TF")
+        if ctrl_library == "Randomizer":
+            self.devstat = []
+            for m in range(len(self.devlist)):
+                self.devstat.append(1)
         
         # Construct the toplayout and make it stretchable
         self.toplayout = QtGui.QVBoxLayout(self)
@@ -176,20 +179,23 @@ class Dialog(QtGui.QDialog):
                     self.bottomlabel.setText("Not a DynaGUI file - missing identifier.")
     
     def enableallbuttonclicked(self):
+        if ctrl_library == "Randomizer":
+            self.devstat.clear()
         for item in self.buttonGroup.buttons():
             proxy = item.text()
-            prox=[PT.DeviceProxy(str(proxy))]
-            
-            # Get the states of all devices, one at a time (val)
-            for dev in prox:
-                try:
-                    val = dev.read_attribute(str(self.listofbpmattributeslistbox.currentText())).value
-                    
-                    # Try to write to the device
-                    if val is False: # If false, interlock is disabled.
-                        dev.write_attribute(str(self.listofbpmattributeslistbox.currentText()),True)
-                except:
-                    item.setStyleSheet('background-color: fuchsia')
+            if self.ctrl_library == "Tango":
+                prox=[PT.DeviceProxy(str(proxy))]
+                # Get the states of all devices, one at a time (val)
+                for dev in prox:
+                    try:
+                        val = dev.read_attribute(str(self.listofbpmattributeslistbox.currentText())).value
+                        # Try to write to the device
+                        if val is False: # If false, interlock is disabled.
+                            dev.write_attribute(str(self.listofbpmattributeslistbox.currentText()),True)
+                    except:
+                        item.setStyleSheet('background-color: fuchsia')
+            elif ctrl_library == "Randomizer":
+                self.devstat.append(1)
         self.statuscheck()
     
     def killdynamicbuttongroup(self):
@@ -202,12 +208,13 @@ class Dialog(QtGui.QDialog):
 
     def getallDevs(self):
         # Construct all necessary buttons
+        self.BPMproxies = self.devlist
         
         rowcount = -1
         colcount = 0
         
         # Here the construction begins for all the pushbuttons, and we make them all belong to the groupbox.
-        for index in self.devlist:
+        for index in self.BPMproxies:
             rowcount += 1
             button = QtGui.QPushButton(index, self.groupBox)
             self.sublayout.addWidget(button,rowcount,colcount,1,1)
@@ -229,44 +236,65 @@ class Dialog(QtGui.QDialog):
         self.statuscheck()
         
     def statuscheck(self):
+        if ctrl_library == "Randomizer":
+            n = -1
         for item in self.buttonGroup.buttons():
             try:
                 proxy = item.text()
-                prox = [PT.DeviceProxy(str(proxy))]
-                try:
-                    for bd in prox:
-                        val = bd.read_attribute(str(self.listofbpmattributeslistbox.currentText())).value
-                        if val is True:
-                            item.setStyleSheet('background-color: lime')
-                        elif val is False:
-                            item.setStyleSheet('background-color: red')
-                except:
-                    item.setStyleSheet('background-color: fuchsia')
+                if self.ctrl_library == "Tango":
+                    prox = [PT.DeviceProxy(str(proxy))]
+                    try:
+                        for bd in prox:
+                            val = bd.read_attribute(str(self.listofbpmattributeslistbox.currentText())).value
+                            if val is True:
+                                item.setStyleSheet('background-color: lime')
+                            elif val is False:
+                                item.setStyleSheet('background-color: red')
+                    except:
+                        item.setStyleSheet('background-color: fuchsia')
+                elif ctrl_library == "Randomizer":
+                    n += 1
+                    if self.devstat[n] == 1:
+                        item.setStyleSheet('background-color: lime')
+                    elif self.devstat[n] == 0:
+                        item.setStyleSheet('background-color: red')
             except:
                 item.setStyleSheet('QPushButton {background-color: maroon; color: white}')
         self.bottomlabel.setText(str(str(self.listofbpmattributeslistbox.currentText()) + " statuses loaded."))
         
     def handleButtonClicked(self,button):
+        if ctrl_library == "Randomizer":
+            n = -1
         for item in self.buttonGroup.buttons():
+            if ctrl_library == "Randomizer":
+                n += 1
             if button is item:
                 proxy = item.text()
-                prox=[PT.DeviceProxy(str(proxy))]
-                for dev in prox:
-                    try:
-                        val = dev.read_attribute(str(self.listofbpmattributeslistbox.currentText())).value
-                        if val is True: # If true --> Interlock is enabled.
-                            dev.write_attribute(str(self.listofbpmattributeslistbox.currentText()),False)
-                        if val is False: # If true --> Interlock is disabled.
-                            dev.write_attribute(str(self.listofbpmattributeslistbox.currentText()),True)
-                        time.sleep(0.5)
-                        val2 = dev.read_attribute(str(self.listofbpmattributeslistbox.currentText())).value
-                        if val2 is True:
-                            item.setStyleSheet('background-color: lime')
-                        elif val2 is False:
-                            item.setStyleSheet('background-color: red')
-                    except:
-                        item.setStyleSheet('background-color: fuchsia')
-            
+                if self.ctrl_library == "Tango":
+                    prox=[PT.DeviceProxy(str(proxy))]
+                    for dev in prox:
+                        try:
+                            val = dev.read_attribute(str(self.listofbpmattributeslistbox.currentText())).value
+                            if val is True: # If true --> Interlock is enabled.
+                                dev.write_attribute(str(self.listofbpmattributeslistbox.currentText()),False)
+                            if val is False: # If true --> Interlock is disabled.
+                                dev.write_attribute(str(self.listofbpmattributeslistbox.currentText()),True)
+                            time.sleep(0.5)
+                            val2 = dev.read_attribute(str(self.listofbpmattributeslistbox.currentText())).value
+                            if val2 is True:
+                                item.setStyleSheet('background-color: lime')
+                            elif val2 is False:
+                                item.setStyleSheet('background-color: red')
+                        except:
+                            item.setStyleSheet('background-color: fuchsia')
+                elif ctrl_library == "Randomizer":
+                    if self.devstat[n] == 1:
+                        self.devstat[n] = 0
+                        item.setStyleSheet('background-color: red')
+                    elif self.devstat[n] == 0:
+                        self.devstat[n] = 1
+                        item.setStyleSheet('background-color: lime')
+                        
     def listbtnclicked(self):
         listGui = listbtnGUI(self)
         listGui.setModal(True)
@@ -349,10 +377,22 @@ class listbtnGUI(QtGui.QDialog):
 
 if __name__ == '__main__':
     try:
-        inp = sys.argv[1]
+        ctrl_library = sys.argv[1]
+        inp = sys.argv[2]
     except:
         inp = 0
     app = QtGui.QApplication(sys.argv)
-    window = Dialog(inp)
-    window.show()
-    sys.exit(app.exec_())
+    goflag = 1
+    if ctrl_library == "Tango":
+        import PyTango as PT
+    elif ctrl_library == "EPICS":
+        print("Not yet implemented.")
+        goflag = 0
+    elif ctrl_library == "Randomizer":
+        import random
+    else:
+        goflag = 0
+    if goflag == 1:
+        window = Dialog(inp,ctrl_library)
+        window.show()
+        sys.exit(app.exec_())

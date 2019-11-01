@@ -14,12 +14,12 @@ import sys
 import os
 
 class Dialog(QtGui.QDialog):
-    def __init__(self, inp):
+    def __init__(self):
         QtGui.QDialog.__init__(self)
         
         self.toplayout = QtGui.QVBoxLayout(self)
         
-        controlsystems = ['TANGO', 'EPICS', 'Other']
+        controlsystems = ['TANGO', 'EPICS', 'Randomizer', 'Other']
         
         self.setWindowTitle("DynaGUI Launcher")
         
@@ -28,20 +28,14 @@ class Dialog(QtGui.QDialog):
         self.controlsystemsBox.currentIndexChanged.connect(self.controlsyscomboclicked)
         
         self.controlsystem = 'TANGO'
-        self.controlpanel = 'AtkPanel'
         
-        self.controlpanelbox = QtGui.QLineEdit(self.controlpanel)
         self.conffilepath = QtGui.QLineEdit()
         
         text_controlsystem = QtGui.QLabel('Control system:')
-        text_controlpanel = QtGui.QLabel('Control Panel:')
         text_conffilepath = QtGui.QLabel('File path to configuration file:')
         
         self.toplayout.addWidget(text_controlsystem)
         self.toplayout.addWidget(self.controlsystemsBox)
-        
-        self.toplayout.addWidget(text_controlpanel)
-        self.toplayout.addWidget(self.controlpanelbox)
         
         self.browseFiles = QtGui.QPushButton("Browse")
         self.browseFiles.clicked.connect(self.browseFilesClicked)
@@ -68,7 +62,7 @@ class Dialog(QtGui.QDialog):
         Hlayout2.addWidget(Alarmsbtn)
     
     def browseFilesClicked(self):
-        nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File')
+        nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File', '/mxn/groups/operators/controlroom/python_programs/qtw_DynaGUI/ConfFiles')
         if nameoffile:
             self.conffilepath.setText(nameoffile)
     
@@ -76,7 +70,9 @@ class Dialog(QtGui.QDialog):
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
         if self.controlsystem == 'TANGO':
-            os.system("python "+dirpath+"/DynaGUI_TF_Tango.py "+fp+"&")
+            os.system("python "+dirpath+"/DynaGUI_TF.py 'Tango' "+fp+"&")
+        elif self.controlsystem == 'Randomizer':
+            os.system("python "+dirpath+"/DynaGUI_TF.py 'Randomizer' "+fp+"&")
         else:
             QtGui.QMessageBox.information(self,'Information', 'This will be added in a future release.')
         self.close()
@@ -85,7 +81,9 @@ class Dialog(QtGui.QDialog):
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
         if self.controlsystem == 'TANGO':
-            os.system("python "+dirpath+"/DynaGUI_NV_Tango.py "+fp+"&")
+            os.system("python "+dirpath+"/DynaGUI_NV.py 'Tango' "+fp+"&")
+        elif self.controlsystem == 'Randomizer':
+            os.system("python "+dirpath+"/DynaGUI_NV.py 'Randomizer' "+fp+"&")
         else:
             QtGui.QMessageBox.information(self,'Information', 'This will be added in a future release.')
         self.close()
@@ -94,7 +92,9 @@ class Dialog(QtGui.QDialog):
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
         if self.controlsystem == 'TANGO':
-            os.system("python "+dirpath+"/DynaGUI_Alarms_Tango.py "+fp+"&")
+            os.system("python "+dirpath+"/DynaGUI_Alarms.py 'Tango' "+fp+"&")
+        elif self.controlsystem == 'Randomizer':
+            os.system("python "+dirpath+"/DynaGUI_Alarms.py 'Randomizer' "+fp+"&")
         else:
             QtGui.QMessageBox.information(self,'Information', 'This will be added in a future release.')
         self.close()
@@ -102,20 +102,9 @@ class Dialog(QtGui.QDialog):
         
     def controlsyscomboclicked(self):
         self.controlsystem = str(self.controlsystemsBox.currentText())
-        
-        if self.controlsystem == 'TANGO':
-            self.controlpanelbox.setText('AtkPanel')
-        elif self.controlsystem == 'EPICS':
-            self.controlpanelbox.setText('iGp')
-        elif self.controlsystem == 'Other':
-            self.controlpanelbox.setText('Define the Control Panel')
 
 if __name__ == '__main__':
-    try:
-        inp = sys.argv[1]
-    except:
-        inp = 0
     app = QtGui.QApplication(sys.argv)
-    window = Dialog(inp)
+    window = Dialog()
     window.show()
     sys.exit(app.exec_())
