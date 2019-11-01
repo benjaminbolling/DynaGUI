@@ -41,10 +41,6 @@ DynaGUI NV is the most advance tool in the package, which for each device has tw
 
 The package aims to enable users to construct dynamic GUI:s for multiple purposes, and the author is open for implementing new functions and control systems on demand. For testing purposes, an artificial control system 'Randomizer' has been created displaying only random values.
 
-# Figures
-
-![A dynamic control panel of DynaGUI has been configured (left), from which a 1D realtime plot has been launched for the devices of which the HorProfile vector attribute is valid. This vector attribute reveals the horizontal profile of a particle beam.](figure1.png)
-
 # Acknowledgements
 The author recognizes and wants to thank Jonas Petersson and Robin Svard, Accelerator Operators at the MAX IV Laboratory, for developing the original 2D Spectrogram Application for monitoring transverse beam position via Beam Position Monitors at the MAX IV Laboratory storage rings. The author used their codes as inspiration for developing a generic algorithm which can initialize a 2D spectrogram for any given list of devices with attributes. The author also wants to thank Bernhard Meirose, also an Accelerator Operator at the MAX IV Laboratory, for giving the inspiration and awakening the idea to creating this package.
 
