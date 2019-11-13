@@ -268,7 +268,7 @@ class Dialog(QtGui.QWidget):
                     try:
                         for bd in prox:
                             val = bd.read_attribute(str(self.listofbpmattributeslistbox.currentText())).value
-                            item.setStyleSheet('background-color: lime')
+                            item.setStyleSheet('background-color: green')
                             lineedits = self.groupBox.findChildren(QtGui.QLineEdit)
                             if hasattr(val, "__len__"):
                                 val = 'nscalar, len = '+str(len(val))
@@ -292,7 +292,7 @@ class Dialog(QtGui.QWidget):
                                 lineedit.setText("-")
                 elif self.ctrl_library == "Randomizer":
                     val = random.random()
-                    item.setStyleSheet('background-color: lime')
+                    item.setStyleSheet('background-color: green')
                     lineedits = self.groupBox.findChildren(QtGui.QLineEdit)
                     if hasattr(val, "__len__"):
                         val = 'nscalar, len = '+str(len(val))
