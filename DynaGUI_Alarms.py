@@ -22,7 +22,7 @@ try:
     from PyQt5 import QtCore
 except:
     from PyQt4 import QtCore, QtGui
-import os
+import os, platform
 from datetime import datetime
 from functools import partial
 from time import sleep
@@ -47,31 +47,31 @@ class Dialog(QtGui.QDialog):
                             'r3-319l/dia/tco-02/temperature',
                             'r3-319l/dia/tco-03/temperature',
                             'r1-101/dia/bpm-01/xmeanpossa']
-            
+
             self.devdesc = ['R3 319 TCO 01 temperature',
                             'R3 319 TCO 02 temperature',
                             'R3 319 TCO 03 temperature',
                             'R1 101 BPM 01 x-pos']
-            
+
             self.devlims = [36,
                             38,
                             40,
                             100]
-            
+
             self.Nrows = 20
         self.reloadflag = 0
         self.maxsize = 0
         self.timerinterval = 30 # seconds
-        
+
         # Construct the toplayout and make it stretchable
         self.toplayout = QtGui.QVBoxLayout(self)
         self.toplayout.addStretch()
-        
+
         # Construct a horizontal layout box for the edit and get all attribute buttons (must be a sublayer of the toplayout)
         self.editgetallwdg = QtGui.QWidget(self)
         self.toplayout.addWidget(self.editgetallwdg)
         self.horizlayout0 = QtGui.QHBoxLayout(self.editgetallwdg)
-        
+
         # Construct the button for setting up a dynamic list of attributes
         self.listbtn = QtGui.QPushButton("Edit DynaGUI")
         self.listbtn.clicked.connect(self.listbtnclicked)
@@ -81,30 +81,30 @@ class Dialog(QtGui.QDialog):
             self.doublevalidator = QtGui2.QDoubleValidator(-float('inf'),float('inf'),5)
         except:
             self.doublevalidator = QtGui.QDoubleValidator(-float('inf'),float('inf'),5)
-            
+
         # Now we construct the sublayout which will consist of the dynamically constructed buttons of the lists defined above (in example; list1 or list2)
         self.sublayout = QtGui.QGridLayout()
         self.toplayout.addLayout(self.sublayout)
-        
+
         # Now we construct a groupbox for all the dynamically constructed buttons. Edit its text to whatever is appropriate. Then its added to the sublayout.# Now we construct the sublayout which will consist of the dynamically constructed buttons of the lists defined above (in example; list1 or list2)
         self.groupBox = QtGui.QGroupBox()
         self.sublayout.addWidget(self.groupBox)
         self.sublayout = QtGui.QGridLayout(self.groupBox)
-        
+
         # Construct a simple label widget which in this example has the purpose of displaying various messages to the user (status messages)
         self.bottomlabel = QtGui.QLabel("")
         self.toplayout.addWidget(self.bottomlabel)
-        
+
         # Construct a horizontal layout box for the load and save buttons (must be a sublayer of the toplayout)
         self.loadsavewdg = QtGui.QWidget(self)
         self.toplayout.addWidget(self.loadsavewdg)
         self.horizlayout1 = QtGui.QHBoxLayout(self.loadsavewdg)
-        
+
         # Construct a horiztontal layout box for the Plot and Update buttons (must be a sublayer of the toplayout)
         self.plotupdwdg = QtGui.QWidget(self)
         self.toplayout.addWidget(self.plotupdwdg)
         self.horizlayout2 = QtGui.QHBoxLayout(self.plotupdwdg)
-        
+
         # Construct the load and save buttons, connect them to their functions and add them to their horizontal container
         self.loadbtn = QtGui.QPushButton("Load")
         self.savebtn = QtGui.QPushButton("Save")
@@ -122,25 +122,25 @@ class Dialog(QtGui.QDialog):
         self.horizlayout1.addWidget(self.savebtn)
         self.horizlayout1.addWidget(self.selectallbtn)
         self.horizlayout1.addWidget(self.unselectallbtn)
-        
+
         self.startstopbtn = QtGui.QPushButton("Not running. Press to activate.")
         self.startstopbtn.clicked.connect(self.startstopclicked)
         self.startstopbtn.setStyleSheet('QPushButton {background-color: maroon; color: white}')
         self.toplayout.addWidget(self.startstopbtn)
         # Run the script for generating the dynamical buttons
         self.getallDevs()
-        
+
         self.timer = QtCore.QTimer()
         self.timer.timeout.connect(self.statuscheck)
-    
+
     def selectallbtnclicked(self):
         for item in self.groupBox.findChildren(QtGui.QCheckBox):
             item.setChecked(True)
-        
+
     def unselectallbtnclicked(self):
         for item in self.groupBox.findChildren(QtGui.QCheckBox):
             item.setChecked(False)
-    
+
     def savebtnclicked(self):
         nameoffile = QtGui.QFileDialog.getSaveFileName(self, 'Save to File')
         if not nameoffile:
@@ -152,14 +152,14 @@ class Dialog(QtGui.QDialog):
             file.close()
             self.bottomlabel.setText("Configuration saved to file.")
             self.bottomlabel.setToolTip("Saved configuation to file: "+nameoffile)
-    
+
     def loadbtnclicked(self):
         nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File')
         if not nameoffile:
             self.bottomlabel.setText("Cancelled loading configuration.")
         else:
             self.loadfile(nameoffile,0)
-            
+
     def loadfile(self,nameoffile,inp2):
             file = open(nameoffile, 'r')
             splitToLoad = file.read()
@@ -215,12 +215,12 @@ class Dialog(QtGui.QDialog):
         for item in self.groupBox.findChildren(QtGui.QLabel):
             self.sublayout.removeWidget(item)
             item.deleteLater()
-        
+
 
     def getallDevs(self):
         rowcount = -1
         colcount = 0
-        
+
         # Here the construction begins for all the checkboxes, and we make them all belong to the groupbox.
         for numm, index in enumerate(self.devdesc):
             rowcount += 1
@@ -235,7 +235,7 @@ class Dialog(QtGui.QDialog):
             combobox = QtGui.QComboBox(self.groupBox)
             combobox.addItem("<")
             combobox.addItem(">")
-            
+
             textbox.setEnabled(True)
             textbox.textChanged.connect(partial(self.lineeditedited,textbox))
             label = QtGui.QLabel("-",self.groupBox)
@@ -246,50 +246,56 @@ class Dialog(QtGui.QDialog):
             if rowcount == self.Nrows - 1:
                 rowcount = -1
                 colcount += 4
-        
+
         # Here we construct the buttongroup.
         self.buttonGroup = QtGui.QButtonGroup(self)
-        
+
         # Here we add all buttons to the buttongroup.
         for button in self.groupBox.findChildren(QtGui.QPushButton):
             if self.buttonGroup.id(button) < 0:
                 self.buttonGroup.addButton(button)
-        
+
         # Get the statuses
         self.statuscheck()
-        
+
     def lineeditedited(self,lineedit):
         n = -1
         for item in self.groupBox.findChildren(QtGui.QLineEdit):
             n += 1
             if lineedit is item:
                 self.devlims[n] = item.text()
-    
+
     def startstopclicked(self):
         if self.timer.isActive():
             self.timer.stop()
             self.startstopbtn.setText("Not running. Press to activate.")
             self.startstopbtn.setStyleSheet('QPushButton {background-color: maroon; color: white}')
         else:
+            self.alarmflag = 0
             self.statuscheck()
             self.timer.start(self.timerinterval * 1000)
             self.startstopbtn.setText("Running. Press to deactivate.")
-            self.startstopbtn.setStyleSheet('QPushButton {background-color: lime; color: black}')
-    
+            if platform.system() == "Linux":
+                self.startstopbtn.setStyleSheet('QPushButton {background-color: lime; color: white}')
+            elif platform.system() == "Darwin":
+                self.startstopbtn.setStyleSheet('QPushButton {background-color: green; color: white}')
+            else:
+                self.startstopbtn.setStyleSheet('QPushButton {background-color: lime; color: white}')
+
     def clock(self):
         print("tic-tac")
-    
+
     def statuscheck(self):
-        self.alarmflag = 0
         checkboxes = self.groupBox.findChildren(QtGui.QCheckBox)
         lineedits = self.groupBox.findChildren(QtGui.QLineEdit)
         labels = self.groupBox.findChildren(QtGui.QLabel)
         combos = self.groupBox.findChildren(QtGui.QComboBox)
+        alarmstring = 0
         for ind, item in enumerate(checkboxes):
             splitt = str(item.toolTip()).split("/")
             attr = splitt[len(splitt)-1]
             proxy = str("/".join(splitt[0:len(splitt)-1]))
-            
+
             if self.ctrl_library == "Tango":
                 prox = [PT.DeviceProxy(str(proxy))]
                 for bd in prox:
@@ -301,39 +307,59 @@ class Dialog(QtGui.QDialog):
             if item.isChecked():
                 if lorm == "<":
                     if val > float(lineedits[ind].text()):
-                        string = str(str(str(str(splitt[0]).split("-")[1]) + " " + str(splitt[len(splitt)-2]) + " in " + str(attr) + " alarm"))
-                        self.bottomlabel.setText(string)
+                        if alarmstring == 0:
+                            alarmstring = str(item.text())
+                        else:
+                            alarmstring = str(alarmstring + " [[slnc 200]] and [[slnc 200]] " + str(item.text()))
                         item.setStyleSheet("background-color: red")
-                        if self.alarmflag == 0:
-                            os.system('spd-say "' + string + '"')
-                            self.alarmflag = 1
                     else:
-                        item.setStyleSheet("background-color: lime")
-                        
+                        if platform.system() == "Linux":
+                            item.setStyleSheet("background-color: lime")
+                        elif platform.system() == "Darwin":
+                            item.setStyleSheet("background-color: green")
+                        else:
+                            item.setStyleSheet('background-color: lime')
+
                 elif lorm == ">":
                     if val < float(lineedits[ind].text()):
-                        string = str(str(str(str(splitt[0]).split("-")[1]) + " " + str(splitt[len(splitt)-2]) + " in " + str(attr) + " alarm"))
-                        self.bottomlabel.setText(string)
-                        item.setStyleSheet("background-color: red")
-                        if self.alarmflag == 0:
-                            os.system('spd-say "' + string + '"')
-                            self.alarmflag = 1
+                        if alarmstring == 0:
+                            alarmstring = str(item.text())
+                        else:
+                            alarmstring = str(alarmstring + " [[slnc 200]] and [[slnc 200]] " + str(item.text()))
                     else:
-                        item.setStyleSheet("background-color: lime")
-            
+                        if platform.system() == "Linux":
+                            item.setStyleSheet("background-color: lime")
+                        elif platform.system() == "Darwin":
+                            item.setStyleSheet("background-color: green")
+                        else:
+                            item.setStyleSheet('background-color: lime')
+        if alarmstring == 0:
+            self.bottomlabel.setText("All clear.")
+            self.alarmflag = 0
+        else:
+            if self.alarmflag == 0:
+                if platform.system() == "Linux":
+                    os.system('spd-say "' + str("".join(alarmstring.split("[[slnc 200]]"))) + '[[slnc 200]] in alarm."')
+                elif platform.system() == "Darwin":
+                    os.system("say -v 'karen' "+ alarmstring + '[[slnc 200]] in alarm.')
+                elif platform.system() == "Windows":
+                    print("Windows")
+                self.alarmflag = 1
+            self.bottomlabel.setText(str(datetime.now().strftime("%Y-%b-%d_%H%M%S")) + ", " + str("".join(alarmstring.split("[[slnc 200]]")))+" in alarm.")
+
     def listbtnclicked(self):
         listGui = listbtnGUI(self)
         listGui.setModal(True)
         listGui.exec_()
-        
+
         if self.reloadflag == 1:
             self.maxsize = 0
             self.killdynamicbuttongroup()
             self.getallDevs()
-            
+
             # The layout should be minimal, so make it unrealistically small (x=10, y=10 [px]) and then resize to minimum.
             self.reloadflag = 0
-    
+
     def closeEvent(self, event):
         self.timer.stop()
 
@@ -343,45 +369,45 @@ class listbtnGUI(QtGui.QDialog):
         self.parent = parent
         self.setWindowTitle("Edit DynaGUI Alarms")
         listgui = QtGui.QFormLayout(self)
-        
+
         devslbl = QtGui.QLabel("List of devices' server domains:")
         self.textboxDevs = QtGui.QPlainTextEdit('\n'.join(parent.devdoms))
-        
+
         desclbl = QtGui.QLabel("List of devices' descriptions:")
         self.textboxDesc = QtGui.QPlainTextEdit('\n'.join(parent.devdesc))
-        
+
         rowslbl = QtGui.QLabel("Max. number of rows:")
         self.textboxRows = QtGui.QSpinBox()
         self.textboxRows.setValue(parent.Nrows)
-        
+
         tmrlbl = QtGui.QLabel("Alarms timer [s]")
         self.textboxTmr = QtGui.QSpinBox()
         self.textboxTmr.setValue(parent.timerinterval)
-        
+
         okbtn = QtGui.QPushButton('Ok')
         nobtn = QtGui.QPushButton('Cancel')
-        
-        
+
+
         listgui.addRow(devslbl,desclbl)
         listgui.addRow(self.textboxDevs,self.textboxDesc)
-        
+
         listgui.addRow(rowslbl,self.textboxRows)
-        
+
         listgui.addRow(tmrlbl,self.textboxTmr)
-        
+
         listgui.addRow(okbtn, nobtn)
         okbtn.clicked.connect(self.confirmfunc)
         nobtn.clicked.connect(self.cancelfunc)
-        
-        
+
+
         self.resize(self.sizeHint().width(), self.sizeHint().height())
-        
+
     def confirmfunc(self):
         textDevs = str(self.textboxDevs.toPlainText())
         textDescs = str(self.textboxDesc.toPlainText())
         self.newlistDevs = textDevs.split()
         self.newlistDescs = textDescs.split('\n')
-        
+
         # Check if all devices have domain, description and limits defined:
         if abs(len(self.newlistDevs)-len(self.newlistDescs)) == 0:
             self.parent.timerinterval = self.textboxTmr.value()
@@ -389,16 +415,21 @@ class listbtnGUI(QtGui.QDialog):
                 self.parent.devdoms = self.newlistDevs
                 self.parent.devdesc = self.newlistDescs
                 self.parent.reloadflag = 1
-            
+
             if self.parent.Nrows != self.textboxRows.value():
                 self.parent.Nrows = self.textboxRows.value()
                 self.parent.reloadflag = 1
             self.close()
         else:
-            os.system('spd-say "NO"')
+            if platform.system() == "Linux":
+                os.system('spd-say "NO NO NO"')
+            elif platform.system() == "Darwin":
+                os.system("say -v 'karen' NO NO NO")
+            elif platform.system() == "Windows":
+                print("Windows")
             QtGui.QMessageBox.warning(self,"Error","Number of domains and descriptions must be the same.")
-        
-    
+
+
     def cancelfunc(self):
         self.close()
 
