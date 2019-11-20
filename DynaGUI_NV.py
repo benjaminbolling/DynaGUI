@@ -44,20 +44,34 @@ class Dialog(QtGui.QWidget):
             except:
                 loadflag = 0
         if loadflag == 0:
-            # All device attributes needed (basically which can be TRUE or False)
-            self.listofbpmattributes = ['lifetime',
-                                        'xpossa',
-                                        'State',
-                                        'SRAM_MD_MODES',
-                                        'SRAM_RMS']
-
-            # Some list of devices. List consists of some random stuff
-            self.devlist = ['r3-319s2/dia/dcct-01',
-                            'r1-101s/dia/dcct-01',
-                            'r1-108/dia/bpm-02',
-                            'r1-109/dia/bpm-01',
-                            'r3-a110811cab14/dia/bbbz-01',
-                            'b105a/dia/bsmon-01']
+            if self.ctrl_library == "Tango": # Some MAX IV Laboratory devices and attributes
+                self.devlist = ['r3-319s2/dia/dcct-01',
+                                'r1-101s/dia/dcct-01',
+                                'r1-108/dia/bpm-02',
+                                'r1-109/dia/bpm-01',
+                                'r3-a110811cab14/dia/bbbz-01',
+                                'b105a/dia/bsmon-01']
+                self.listofbpmattributes = ['lifetime',
+                                            'xpossa',
+                                            'State',
+                                            'SRAM_MD_MODES',
+                                            'SRAM_RMS']
+            elif self.ctrl_library == "EPICS": # Some ESS PV:s
+                self.PV_list = ['LEBT-010:PwrC-PSCH-01:CurR',
+                                'LEBT-010:PwrC-PSCV-01:CurR',
+                                'LEBT-010:PwrC-SolPS-01:CurR',
+                                'LEBT-010:PwrC-SolPS-02:CurR']
+                self.PV_descriptions = ['LEBT_CH-01_Current',
+                                        'LEBT_CV-01_Current',
+                                        'LEBT_Sol-01_Current',
+                                        'LEBT_Sol-02_Current']
+            elif ctrl_library == "Randomizer":
+                self.devlist = []
+                for m in range(0,35):
+                    self.devlist.append(str("Random_device_"+str(m)))
+                self.listofbpmattributes = []
+                for m in range(0,8):
+                    self.listofbpmattributes.append(str("Random_attribute_"+str(m)))
             self.Nrows = 15
         self.reloadflag = 0
         self.maxsize = 0
@@ -70,10 +84,17 @@ class Dialog(QtGui.QWidget):
         self.toplayout.addStretch()
 
         # Construct the combobox for the list of attributes
-        self.listofbpmattributeslistbox = QtGui.QComboBox(self)
-        self.listofbpmattributeslistbox.addItems(self.listofbpmattributes)
-        self.listofbpmattributeslistbox.currentIndexChanged.connect(self.statuscheck)
-        self.toplayout.addWidget(self.listofbpmattributeslistbox)
+        if self.ctrl_library == "Tango":
+            self.listofbpmattributeslistbox = QtGui.QComboBox(self)
+            self.listofbpmattributeslistbox.addItems(self.listofbpmattributes)
+            self.listofbpmattributeslistbox.currentIndexChanged.connect(self.statuscheck)
+            self.toplayout.addWidget(self.listofbpmattributeslistbox)
+        # elif self.ctrl_library == "EPICS": DO NOT add, EPICS uses PV:s and not devices with attributes
+        elif ctrl_library == "Randomizer":
+            self.listofbpmattributeslistbox = QtGui.QComboBox(self)
+            self.listofbpmattributeslistbox.addItems(self.listofbpmattributes)
+            self.listofbpmattributeslistbox.currentIndexChanged.connect(self.statuscheck)
+            self.toplayout.addWidget(self.listofbpmattributeslistbox)
 
         # Construct a horizontal layout box for the edit and get all attribute buttons (must be a sublayer of the toplayout)
         self.editgetallwdg = QtGui.QWidget(self)
@@ -90,7 +111,12 @@ class Dialog(QtGui.QWidget):
         self.getAllAttsBtn = QtGui.QPushButton("Get all attributes")
         self.getAllAttsBtn.clicked.connect(self.getAllAttsClicked)
         self.getAllAttsBtn.setEnabled(True)
-        self.horizlayout0.addWidget(self.getAllAttsBtn)
+        if self.ctrl_library == "Tango":
+            self.horizlayout0.addWidget(self.getAllAttsBtn)
+        # elif self.ctrl_library == "EPICS": DO NOT add, EPICS uses PV:s and not devices with attributes
+        elif ctrl_library == "Randomizer":
+            self.horizlayout0.addWidget(self.getAllAttsBtn)
+
 
         # Now we construct the sublayout which will consist of the dynamically constructed buttons of the lists defined above (in example; list1 or list2)
         self.sublayout = QtGui.QGridLayout()
@@ -155,7 +181,12 @@ class Dialog(QtGui.QWidget):
             self.bottomlabel.setText("Cancelled save configuration.")
         else:
             file = open(nameoffile, 'w')
-            self.toSave = str('IamaDynaGUIfile' + '\n' + "##IamYourSeparator##\n" + '\n'.join(self.devlist) + '\n' + "##IamYourSeparator##\n" + '\n'.join(self.listofbpmattributes) + '\n' + "##IamYourSeparator##\n" + str(self.Nrows))
+            if self.ctrl_library == "Tango":
+                self.toSave = str('IamaDynaGUIfile' + '\n' + "##IamYourSeparator##\n" + '\n'.join(self.devlist) + '\n' + "##IamYourSeparator##\n" + '\n'.join(self.listofbpmattributes) + '\n' + "##IamYourSeparator##\n" + str(self.Nrows))
+            elif self.ctrl_library == "EPICS":
+                self.toSave = str('IamaDynaGUIfile' + '\n' + "##IamYourSeparator##\n" + '\n'.join(self.PV_list) + '\n' + "##IamYourSeparator##\n" + '\n'.join(self.PV_descriptions) + '\n' + "##IamYourSeparator##\n" + str(self.Nrows))
+            elif ctrl_library == "Randomizer":
+                self.toSave = str('IamaDynaGUIfile' + '\n' + "##IamYourSeparator##\n" + '\n'.join(self.devlist) + '\n' + "##IamYourSeparator##\n" + '\n'.join(self.listofbpmattributes) + '\n' + "##IamYourSeparator##\n" + str(self.Nrows))
             file.write(self.toSave)
             file.close()
             self.bottomlabel.setText("Configuration saved to file.")
@@ -184,8 +215,15 @@ class Dialog(QtGui.QWidget):
                     while("" in listofbpmattributes): # Get rid of empty strings
                         listofbpmattributes.remove("")
                     Nrows = splitToLoad[3].split("\n")[1]
-                    self.devlist = devlist
-                    self.listofbpmattributes = listofbpmattributes
+                    if self.ctrl_library == "Tango":
+                        self.devlist = devlist
+                        self.listofbpmattributes = listofbpmattributes
+                    elif ctrl_library == "Randomizer":
+                        self.devlist = devlist
+                        self.listofbpmattributes = listofbpmattributes
+                    elif self.ctrl_library == "EPICS":
+                        self.PV_list = devlist
+                        self.PV_descriptions = listofbpmattributes
                     self.Nrows = float(Nrows)
                     # Destroy the current buttons.
                     if inp2 == 0:
@@ -217,10 +255,10 @@ class Dialog(QtGui.QWidget):
                 item.widget().close()
         for n in self.buttonGroup.buttons():
             self.buttonGroup.removeButton(n)
-        self.sublayout.removeWidget(self.groupBox)
-        self.groupBox = QtGui.QGroupBox()
-        self.sublayout.addWidget(self.groupBox)
-        self.sublayout = QtGui.QGridLayout(self.groupBox)
+        for lineedit in self.groupBox.findChildren(QtGui.QLineEdit):
+            lineedit.deleteLater()
+        for button in self.groupBox.findChildren(QtGui.QPushButton):
+            button.deleteLater()
 
     def getallDevs(self):
         # Construct all necessary buttons
@@ -228,7 +266,14 @@ class Dialog(QtGui.QWidget):
         colcount = 0
 
         # Here the construction begins for all the pushbuttons, and we make them all belong to the groupbox.
-        for index in self.devlist:
+        if self.ctrl_library == "Tango":
+            alldevs = self.devlist
+        elif ctrl_library == "Randomizer":
+            alldevs = self.devlist
+        elif self.ctrl_library == "EPICS":
+            alldevs = self.PV_list
+
+        for index in alldevs:
             rowcount += 1
             button = QtGui.QPushButton(index, self.groupBox)
             textbox = QtGui.QLineEdit("-", self.groupBox)
@@ -292,6 +337,9 @@ class Dialog(QtGui.QWidget):
                             lval += 1
                             if lval == bval:
                                 lineedit.setText("-")
+                elif self.ctrl_library == "EPICS":
+                    print("EPICS")
+
                 elif self.ctrl_library == "Randomizer":
                     val = random.random()
                     if platform.system() == "Linux":
@@ -323,7 +371,12 @@ class Dialog(QtGui.QWidget):
                 lineedit.setFixedWidth(self.maxsize+25)
             except:
                 lineedit.setFixedWidth(50)
-        self.bottomlabel.setText(str(str(self.listofbpmattributeslistbox.currentText()) + " statuses loaded."))
+        if self.ctrl_library == "Tango":
+            self.bottomlabel.setText(str(str(self.listofbpmattributeslistbox.currentText()) + " statuses loaded."))
+        elif ctrl_library == "Randomizer":
+            self.bottomlabel.setText(str(str(self.listofbpmattributeslistbox.currentText()) + " statuses loaded."))
+        elif self.ctrl_library == "EPICS":
+            self.bottomlabel.setText(str("PV statuses loaded."))
         self.setMaximumSize(10,10)
         self.resize(self.sizeHint().width(), self.sizeHint().height())
 
@@ -332,13 +385,19 @@ class Dialog(QtGui.QWidget):
         valid_devs = []
         valid_attr_names = []
 
-        for dev in self.devlist:
+        if self.ctrl_library == "Tango":
+            alldevs = self.devlist
+        elif ctrl_library == "Randomizer":
+            alldevs = self.devlist
+        elif self.ctrl_library == "EPICS":
+            alldevs = self.PV_list
+
+        for dev in alldevs:
             dev_id = dev.split("/")
             dev_id = dev_id[len(dev_id)-1]
             if dev_id not in [str(x) for x in dev_ids]:
                 dev_ids.append(dev_id)
                 valid_devs.append(dev)
-
         for dev in valid_devs:
             try:
                 if self.ctrl_library == "Tango":
@@ -450,10 +509,21 @@ class Dialog(QtGui.QWidget):
         wildGUI.exec_()
         if self.reloadflag == 1:
             devlist = []
-            for n in self.devlist:
-                if n not in devlist:
-                    devlist.append(n)
-            self.devlist = devlist
+            if self.ctrl_library == "Tango":
+                for n in self.devlist:
+                    if n not in devlist:
+                        devlist.append(n)
+                self.devlist = devlist
+            elif self.ctrl_library == "Randomizer":
+                for n in self.devlist:
+                    if n not in devlist:
+                        devlist.append(n)
+                self.devlist = devlist
+            elif self.ctrl_library == "EPICS":
+                for n in self.PV_list:
+                    if n not in devlist:
+                        devlist.append(n)
+                self.PV_list = devlist
             self.maxsize = 0
             self.killdynamicbuttongroup()
             self.getallDevs()
@@ -543,14 +613,23 @@ class wildcardsGUI(QtGui.QDialog):
     def __init__(self, parent = Dialog):
         super(wildcardsGUI, self).__init__(parent)
         self.parent = parent
-        db = PT.Database()
         text,ok = QtGui.QInputDialog.getText(self,"Get devices","Define wildcards",text="*/*/*")
         self.setWindowTitle("Import PyTango Devices using WildCards")
         listgui = QtGui.QFormLayout(self)
         nobtn = QtGui.QPushButton('Cancel')
         nobtn.clicked.connect(self.cancelfunc)
         if ok and text:
-            self.devs = db.get_device_exported(str(text))
+            if self.parent.ctrl_library == "Tango":
+                db = PT.Database()
+                self.devs = db.get_device_exported(str(text))
+
+            elif self.parent.ctrl_library == "Randomizer":
+                self.devs = []
+                inptxt = text.split("/")
+                for m in range(len(inptxt)):
+                    self.devs.append("RandomDevice_"+str(m)+"_"+str(inptxt[m]))
+            elif self.parent.ctrl_library == "EPICS":
+                print("EPICS")
             self.devs = '\n'.join(self.devs)
             devslbl = QtGui.QLabel("List of devices found:")
             self.textboxDevs = QtGui.QPlainTextEdit(self.devs)
@@ -1133,7 +1212,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                             maxval = value
                             maxvallbl = m + preindex
                         self.curve[m + preindex].setData(timestamps, self.data_y[m + preindex], pen=pg.mkPen(self.colorind[m + preindex], width=2))
-            self.contWidget.graphlbl1.setText("Max. value: "+str(maxval)+"\nfrom vector "+str(maxvallbl))
+            self.contWidget.graphlbl1.setText("Max. value: "+str("{0:.4f}".format(maxval))+"\nfrom vector "+str(maxvallbl))
         elif self.scalarflag == 1:
             maxval = 0
             maxvallbl = -1
@@ -1171,7 +1250,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                         maxval = value
                         maxvallbl = n
                     self.curve[n].setData(timestamps, self.data_y[n], pen=pg.mkPen(self.colorind[n], width=2))
-            self.contWidget.graphlbl1.setText("Max. value: "+str(maxval)+"\nfrom device #"+str(maxvallbl))
+            self.contWidget.graphlbl1.setText("Max. value: "+str("{0:.4f}".format(maxval))+"\nfrom vector "+str(maxvallbl))
 
     def reset(self):
         reply = QtGui.QMessageBox.question(self, 'Reset', 'Are you sure you want to clear all data? All plotting data will be lost.', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
@@ -1189,7 +1268,6 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
     def PlotSettings(self):
         if self.pyqtgraphtimer.isActive():
             activeflag = 1
-            self.pyqtgraphtimer.stop()
         else:
             activeflag = 0
         settingsW = PyQtGraphSetup(self)
@@ -1197,6 +1275,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
         if self.okflag == 1:
             self.acceptNewPlotSettings()
         if activeflag == 1:
+            self.pyqtgraphtimer.stop()
             self.pyqtgraphtimer.start(1000/self.updateFreq)
 
     def acceptNewPlotSettings(self):
@@ -1565,9 +1644,7 @@ if __name__ == '__main__':
     if ctrl_library == "Tango":
         import PyTango as PT
     elif ctrl_library == "EPICS":
-        import EPICS
-        print("Not yet implemented.")
-        goflag = 0
+        import epics, requests, json
     elif ctrl_library == "Randomizer":
         import random
     else:
