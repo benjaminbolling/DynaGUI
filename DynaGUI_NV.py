@@ -22,7 +22,7 @@ try:
     from PyQt5 import QtCore
 except:
     from PyQt4 import QtCore, QtGui
-import os, platform, sys, time, datetime
+import os, platform, sys, time, datetime, fnmatch
 import numpy as np
 import pyqtgraph as pg
 from math import *
@@ -32,7 +32,7 @@ import matplotlib.pyplot as plt
 class Dialog(QtGui.QWidget):
     def __init__(self, inp, ctrl_library):
         QtGui.QDialog.__init__(self)
-        self.setWindowTitle("DynaGUI NV")
+        self.setWindowTitle("DynaGUI NV - "+str(ctrl_library))
         self.ctrl_library = ctrl_library
         if inp == 0:
             loadflag = 0
@@ -50,21 +50,25 @@ class Dialog(QtGui.QWidget):
                                 'r1-108/dia/bpm-02',
                                 'r1-109/dia/bpm-01',
                                 'r3-a110811cab14/dia/bbbz-01',
-                                'b105a/dia/bsmon-01']
+                                'b105a/dia/bsmon-01'
+                                ]
                 self.listofbpmattributes = ['lifetime',
                                             'xpossa',
                                             'State',
                                             'SRAM_MD_MODES',
-                                            'SRAM_RMS']
+                                            'SRAM_RMS'
+                                            ]
             elif self.ctrl_library == "EPICS": # Some ESS PV:s
                 self.PV_list = ['LEBT-010:PwrC-PSCH-01:CurR',
                                 'LEBT-010:PwrC-PSCV-01:CurR',
-                                'LEBT-010:PwrC-SolPS-01:CurR',
-                                'LEBT-010:PwrC-SolPS-02:CurR']
+                                #'LEBT-010:PwrC-SolPS-01:CurR',
+                                #'LEBT-010:PwrC-SolPS-02:CurR'
+                                ]
                 self.PV_descriptions = ['LEBT_CH-01_Current',
                                         'LEBT_CV-01_Current',
-                                        'LEBT_Sol-01_Current',
-                                        'LEBT_Sol-02_Current']
+                                        #'LEBT_Sol-01_Current',
+                                        #'LEBT_Sol-02_Current'
+                                        ]
             elif ctrl_library == "Randomizer":
                 self.devlist = []
                 for m in range(0,35):
@@ -248,7 +252,10 @@ class Dialog(QtGui.QWidget):
 
     def killdynamicbuttongroup(self):
         # Destroy / kill all buttons currently constructed in the buttongroup.
-        self.bottomlabel.setText(str("Loading " + str(self.listofbpmattributeslistbox.currentText()) + " statuses..."))
+        if self.ctrl_library == "EPICS":
+            self.bottomlabel.setText(str("Loading defined PV statuses..."))
+        else:
+            self.bottomlabel.setText(str("Loading " + str(self.listofbpmattributeslistbox.currentText()) + " statuses..."))
         for i in reversed(range(self.sublayout.count())):
             item = self.sublayout.itemAt(i)
             if isinstance(item, QtGui.QWidgetItem):
@@ -273,9 +280,11 @@ class Dialog(QtGui.QWidget):
         elif self.ctrl_library == "EPICS":
             alldevs = self.PV_list
 
-        for index in alldevs:
+        for n,index in enumerate(alldevs):
             rowcount += 1
-            button = QtGui.QPushButton(index, self.groupBox)
+            button = QtGui.QPushButton(str(self.PV_descriptions[n]), self.groupBox)
+            if self.ctrl_library == "EPICS":
+                button.setToolTip(index)
             textbox = QtGui.QLineEdit("-", self.groupBox)
             textbox.setEnabled(False)
             self.sublayout.addWidget(button,rowcount,colcount,1,1)
@@ -298,13 +307,14 @@ class Dialog(QtGui.QWidget):
         self.statuscheck()
 
     def statuscheck(self):
-        bval = -1
         self.maxsize = 0
         TaurusList = []
-        for item in self.buttonGroup.buttons():
-            bval += 1
+        for bval,item in enumerate(self.buttonGroup.buttons()):
             try:
-                proxy = item.text()
+                if self.ctrl_library == "EPICS":
+                    proxy = self.PV_list[bval]
+                else:
+                    proxy = item.text()
                 if self.ctrl_library == "Tango":
                     prox = [PT.DeviceProxy(str(proxy))]
                     try:
@@ -319,6 +329,8 @@ class Dialog(QtGui.QWidget):
                             lineedits = self.groupBox.findChildren(QtGui.QLineEdit)
                             if hasattr(val, "__len__"):
                                 val = 'nscalar, len = '+str(len(val))
+                            else:
+                                val = "{0:.4f}".format(val)
                             lineedits[bval].setText(str(val))
                             font = lineedits[bval].font()
                             try:
@@ -338,8 +350,42 @@ class Dialog(QtGui.QWidget):
                             if lval == bval:
                                 lineedit.setText("-")
                 elif self.ctrl_library == "EPICS":
-                    print("EPICS")
-
+                    PV = epics.PV(proxy, auto_monitor=True)
+                    state = PV.status # Connected => 1
+                    if state == 1:
+                        if platform.system() == "Linux":
+                            item.setStyleSheet('background-color: lime')
+                        elif platform.system() == "Darwin":
+                            item.setStyleSheet('background-color: green')
+                        else:
+                            item.setStyleSheet('background-color: lime')
+                        count = PV.count
+                        lineedits = self.groupBox.findChildren(QtGui.QLineEdit)
+                        if isinstance(count, int):
+                            if count == 1:
+                                val = PV.value
+                            elif count > 1:
+                                val = 'nscalar, len = '+str(count)
+                            TaurusList.append(str(proxy))
+                        else:
+                            val = 'no value...'
+                        lineedits[bval].setText(str(val))
+                        font = lineedits[bval].font()
+                        try:
+                            ffont = QtGui2.QFont(font)
+                            thissize = QtGui2.QFontMetrics(ffont).boundingRect(lineedits[bval].text()).width()
+                        except:
+                            ffont = QtGui.QFont(font)
+                            thissize = QtGui.QFontMetrics(ffont).boundingRect(lineedits[bval].text()).width()
+                        if thissize > self.maxsize:
+                            self.maxsize = thissize
+                    else:
+                        item.setStyleSheet('QPushButton {background-color: maroon; color: white}')
+                        lval = -1
+                        for lineedit in self.groupBox.findChildren(QtGui.QLineEdit):
+                            lval += 1
+                            if lval == bval:
+                                lineedit.setText("-")
                 elif self.ctrl_library == "Randomizer":
                     val = random.random()
                     if platform.system() == "Linux":
@@ -351,6 +397,8 @@ class Dialog(QtGui.QWidget):
                     lineedits = self.groupBox.findChildren(QtGui.QLineEdit)
                     if hasattr(val, "__len__"):
                         val = 'nscalar, len = '+str(len(val))
+                    else:
+                        val = "{0:.4f}".format(val)
                     lineedits[bval].setText(str(val))
                     font = lineedits[bval].font()
                     try:
@@ -364,6 +412,7 @@ class Dialog(QtGui.QWidget):
                     TaurusList.append(str(proxy))
             except:
                 item.setStyleSheet('QPushButton {background-color: maroon; color: white}')
+            print("Loading: "+str("{0:.2f}".format(100*(bval+1)/len(self.buttonGroup.buttons())))+"%")
         self.TaurusList = TaurusList
 
         for lineedit in self.groupBox.findChildren(QtGui.QLineEdit):
@@ -379,6 +428,7 @@ class Dialog(QtGui.QWidget):
             self.bottomlabel.setText(str("PV statuses loaded."))
         self.setMaximumSize(10,10)
         self.resize(self.sizeHint().width(), self.sizeHint().height())
+
 
     def getAllAttsClicked(self):
         dev_ids = []
@@ -422,10 +472,16 @@ class Dialog(QtGui.QWidget):
     def plotin2D(self):
         TaurusList = []
         DevsNames = []
-        attr = str(self.listofbpmattributeslistbox.currentText())
+        if self.ctrl_library == "Tango":
+            attr = str(self.listofbpmattributeslistbox.currentText())
+        elif self.ctrl_library ==  "Randomizer":
+            attr = str(self.listofbpmattributeslistbox.currentText())
         scalars =[]
         for devs in self.TaurusList:
-            TaurusList.append(str(devs)+"/"+attr)
+            if self.ctrl_library == "EPICS":
+                TaurusList.append(str(devs))
+            else:
+                TaurusList.append(str(devs)+"/"+attr)
             DevsNames.append(str(devs))
             if self.ctrl_library == "Tango":
                 prox = [PT.DeviceProxy(str(devs))]
@@ -442,7 +498,10 @@ class Dialog(QtGui.QWidget):
         else:
             self.scalarflag = 0 # it is a vector
         if len(TaurusList) < 1:
-            self.bottomlabel.setText("No devices found with attribute "+attr+".")
+            if self.ctrl_library == "EPICS":
+                self.bottomlabel.setText("No active defined PVs found.")
+            else:
+                self.bottomlabel.setText("No devices found with attribute "+attr+".")
         elif self.scalarflag == 0:
             QtGui.QMessageBox.information(self,"Error",'Cannot 2D plot vectors yet.')
         else:
@@ -450,7 +509,6 @@ class Dialog(QtGui.QWidget):
             self.okflag = 0
             prep2D = prep2DGUI(self)
             prep2D.exec_()
-
             if self.okflag == 1:
                 self.specflag = 0
                 spectro = Spectrogram(self)
@@ -459,30 +517,63 @@ class Dialog(QtGui.QWidget):
     def plotin1D(self):
         TaurusList = []
         DevsNames = []
-        attr = str(self.listofbpmattributeslistbox.currentText())
+        if self.ctrl_library == "Tango":
+            attr = str(self.listofbpmattributeslistbox.currentText())
+        elif self.ctrl_library ==  "Randomizer":
+            attr = str(self.listofbpmattributeslistbox.currentText())
         scalars =[]
         for devs in self.TaurusList:
-            TaurusList.append(str(devs)+"/"+attr)
+            if self.ctrl_library == "EPICS":
+                TaurusList.append(str(devs))
+            else:
+                TaurusList.append(str(devs)+"/"+attr)
             DevsNames.append(str(devs))
             if self.ctrl_library == "Tango":
                 prox = [PT.DeviceProxy(str(devs))]
                 for bd in prox:
                     val = bd.read_attribute(str(self.listofbpmattributeslistbox.currentText())).value
+                    if hasattr(val, "__len__"):
+                        scalars.append(1)
+                    else:
+                        scalars.append(0)
             elif self.ctrl_library ==  "Randomizer":
                 val = random.random()
-            if hasattr(val, "__len__"):
-                scalars.append(1)
-            else:
-                scalars.append(0)
+                if hasattr(val, "__len__"):
+                    scalars.append(1)
+                else:
+                    scalars.append(0)
+            elif self.ctrl_library == "EPICS":
+                count = PV.count
+                lineedits = self.groupBox.findChildren(QtGui.QLineEdit)
+                if isinstance(count, int):
+                    if count == 1:
+                        scalars.append(0)
+                    if count > 1:
+                        scalars.append(1)
         if sum(scalars) == 0:
             self.scalarflag = 1 # it is a scalar
         else:
             self.scalarflag = 0 # it is a vector
-        self.toSpecTaurusList = TaurusList
-        self.toSpecDevList = DevsNames
         if len(TaurusList) < 1:
-            self.bottomlabel.setText("No devices found with attribute "+attr+".")
+            failflag = 1
+            if self.ctrl_library == "EPICS":
+                self.bottomlabel.setText("No active defined PVs found.")
+            else:
+                self.bottomlabel.setText("No devices found with attribute "+attr+".")
+            if self.ctrl_library == "EPICS":
+                reply = QtGui.QMessageBox.question(self, 'Issue', 'No active defined PV:s found.  Enter archiving mode?', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
+                if reply == QtGui.QMessageBox.Yes:
+                    failflag = 0
+                    self.archivingonly = 1
+                    self.toSpecTaurusList = self.PV_list
+                    self.toSpecDevList = self.PV_list
         else:
+            failflag = 0
+            self.archivingonly = 0
+            self.toSpecTaurusList = TaurusList
+            self.toSpecDevList = DevsNames
+
+        if failflag == 0:
             prep1D = prep1DGUI(self)
             prep1D.exec_()
             if self.okflag == 1:
@@ -507,6 +598,40 @@ class Dialog(QtGui.QWidget):
         wildGUI = wildcardsGUI(self)
         wildGUI.setModal(True)
         wildGUI.exec_()
+        print(self.PV_list)
+        if self.reloadflag == 1:
+            reply = QtGui.QMessageBox.question(self, 'Duplicates', 'Remove any duplicate(s)?', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
+            if reply == QtGui.QMessageBox.Yes:
+                if self.ctrl_library == "Tango":
+                    self.devlist = list(dict.fromkeys(self.devlist))
+                elif self.ctrl_library == "Randomizer":
+                    self.devlist = list(dict.fromkeys(self.devlist))
+                elif self.ctrl_library == "EPICS":
+                    self.PV_list = list(dict.fromkeys(self.PV_list))
+
+            if self.ctrl_library == "EPICS":
+                if len(self.PV_descriptions) < len(self.PV_list):
+                    for m in range(len(self.PV_descriptions),len(self.PV_list)):
+                        self.PV_descriptions.append(self.PV_list[m])
+            self.maxsize = 0
+            self.killdynamicbuttongroup()
+            self.getallDevs()
+            # The layout should be minimal, so make it unrealistically small (x=10, y=10 [px]) and then resize to minimum.
+            self.setMaximumSize(10,10)
+            self.resize(self.sizeHint().width(), self.sizeHint().height())
+            self.reloadflag = 0
+
+    def listbtnclicked(self):
+        listGui = listbtnGUI(self)
+        listGui.setModal(True)
+        listGui.exec_()
+        if self.ctrl_library == "Tango":
+            self.listofbpmattributeslistbox.clear()
+            self.listofbpmattributeslistbox.addItems(self.listofbpmattributes)
+        elif self.ctrl_library == "Randomizer":
+            self.listofbpmattributeslistbox.clear()
+            self.listofbpmattributeslistbox.addItems(self.listofbpmattributes)
+
         if self.reloadflag == 1:
             devlist = []
             if self.ctrl_library == "Tango":
@@ -524,26 +649,7 @@ class Dialog(QtGui.QWidget):
                     if n not in devlist:
                         devlist.append(n)
                 self.PV_list = devlist
-            self.maxsize = 0
-            self.killdynamicbuttongroup()
-            self.getallDevs()
-            # The layout should be minimal, so make it unrealistically small (x=10, y=10 [px]) and then resize to minimum.
-            self.setMaximumSize(10,10)
-            self.resize(self.sizeHint().width(), self.sizeHint().height())
-            self.reloadflag = 0
 
-    def listbtnclicked(self):
-        listGui = listbtnGUI(self)
-        listGui.setModal(True)
-        listGui.exec_()
-        self.listofbpmattributeslistbox.clear()
-        self.listofbpmattributeslistbox.addItems(self.listofbpmattributes)
-        if self.reloadflag == 1:
-            devlist = []
-            for n in self.devlist:
-                if n not in devlist:
-                    devlist.append(n)
-            self.devlist = devlist
             self.maxsize = 0
             self.killdynamicbuttongroup()
             self.getallDevs()
@@ -567,12 +673,21 @@ class listbtnGUI(QtGui.QDialog):
         self.setWindowTitle("Edit DynaGUI NV")
         listgui = QtGui.QFormLayout(self)
 
-        devslbl = QtGui.QLabel("List of devices:")
-        self.textboxDevs = QtGui.QPlainTextEdit('\n'.join(parent.devlist))
-
-        attrlbl = QtGui.QLabel("List of device attributes:")
-        self.textboxAttr = QtGui.QPlainTextEdit('\n'.join(parent.listofbpmattributes))
-
+        if self.parent.ctrl_library == "Tango":
+            devslbl = QtGui.QLabel("List of devices:")
+            self.textboxDevs = QtGui.QPlainTextEdit('\n'.join(parent.devlist))
+            attrlbl = QtGui.QLabel("List of device attributes:")
+            self.textboxAttr = QtGui.QPlainTextEdit('\n'.join(parent.listofbpmattributes))
+        elif self.parent.ctrl_library == "Randomizer":
+            devslbl = QtGui.QLabel("List of devices:")
+            self.textboxDevs = QtGui.QPlainTextEdit('\n'.join(parent.devlist))
+            attrlbl = QtGui.QLabel("List of device attributes:")
+            self.textboxAttr = QtGui.QPlainTextEdit('\n'.join(parent.listofbpmattributes))
+        elif self.parent.ctrl_library == "EPICS":
+            devslbl = QtGui.QLabel("List of Process Variables:")
+            self.textboxDevs = QtGui.QPlainTextEdit('\n'.join(parent.PV_list))
+            attrlbl = QtGui.QLabel("List of PV descriptions:")
+            self.textboxAttr = QtGui.QPlainTextEdit('\n'.join(parent.PV_descriptions))
         rowslbl = QtGui.QLabel("Max. number of rows:")
         self.textboxRows = QtGui.QDoubleSpinBox()
         self.textboxRows.setValue(parent.Nrows)
@@ -592,17 +707,44 @@ class listbtnGUI(QtGui.QDialog):
         textDevs = str(self.textboxDevs.toPlainText())
         self.newlistDevs = textDevs.split()
 
-        if self.parent.devlist != self.newlistDevs:
-            self.parent.devlist = self.newlistDevs
-            self.parent.reloadflag = 1
+        if self.parent.ctrl_library == "Tango":
+            if self.parent.devlist != self.newlistDevs:
+                self.parent.devlist = self.newlistDevs
+                self.parent.reloadflag = 1
 
-        textAtts = str(self.textboxAttr.toPlainText())
-        self.newlistAtts = textAtts.split()
-        self.parent.listofbpmattributes = self.newlistAtts
+            textAtts = str(self.textboxAttr.toPlainText())
+            self.newlistAtts = textAtts.split()
+            self.parent.listofbpmattributes = self.newlistAtts
 
-        if self.parent.Nrows != self.textboxRows.value():
-            self.parent.Nrows = self.textboxRows.value()
-            self.parent.reloadflag = 1
+            if self.parent.Nrows != self.textboxRows.value():
+                self.parent.Nrows = self.textboxRows.value()
+                self.parent.reloadflag = 1
+
+        elif self.parent.ctrl_library == "Randomizer":
+            if self.parent.devlist != self.newlistDevs:
+                self.parent.devlist = self.newlistDevs
+                self.parent.reloadflag = 1
+
+            textAtts = str(self.textboxAttr.toPlainText())
+            self.newlistAtts = textAtts.split()
+            self.parent.listofbpmattributes = self.newlistAtts
+
+            if self.parent.Nrows != self.textboxRows.value():
+                self.parent.Nrows = self.textboxRows.value()
+                self.parent.reloadflag = 1
+
+        elif self.parent.ctrl_library == "EPICS":
+            if self.parent.PV_list != self.newlistDevs:
+                self.parent.PV_list = self.newlistDevs
+                self.parent.reloadflag = 1
+
+            textAtts = str(self.textboxAttr.toPlainText())
+            self.newlistAtts = textAtts.split()
+            self.parent.PV_descriptions = self.newlistAtts
+
+            if self.parent.Nrows != self.textboxRows.value():
+                self.parent.Nrows = self.textboxRows.value()
+                self.parent.reloadflag = 1
 
         self.close()
 
@@ -613,7 +755,7 @@ class wildcardsGUI(QtGui.QDialog):
     def __init__(self, parent = Dialog):
         super(wildcardsGUI, self).__init__(parent)
         self.parent = parent
-        text,ok = QtGui.QInputDialog.getText(self,"Get devices","Define wildcards",text="*/*/*")
+        text,ok = QtGui.QInputDialog.getText(self,"Get devices","Define wildcards",text="lebt*sol*curr")
         self.setWindowTitle("Import PyTango Devices using WildCards")
         listgui = QtGui.QFormLayout(self)
         nobtn = QtGui.QPushButton('Cancel')
@@ -622,14 +764,29 @@ class wildcardsGUI(QtGui.QDialog):
             if self.parent.ctrl_library == "Tango":
                 db = PT.Database()
                 self.devs = db.get_device_exported(str(text))
-
             elif self.parent.ctrl_library == "Randomizer":
                 self.devs = []
                 inptxt = text.split("/")
                 for m in range(len(inptxt)):
                     self.devs.append("RandomDevice_"+str(m)+"_"+str(inptxt[m]))
             elif self.parent.ctrl_library == "EPICS":
-                print("EPICS")
+                pv_repo='https://pos.esss.lu.se/data/getData.json'
+                pv_page = requests.get(pv_repo)
+                pv_data = json.loads(pv_page.content)
+                pv_list = []
+                for i in pv_data:
+                    for j in pv_data[i]:
+                        for k in pv_data[i][j]:
+                            pv_list.append(k)
+                self.devs = []
+                pv_list_lower = [x.casefold() for x in pv_list]
+                wildcc = text.casefold()
+                for ind,pv in enumerate(pv_list_lower):
+                    if fnmatch.fnmatch(pv,wildcc):
+                        self.devs.append(pv_list[ind])
+                if len(self.devs) == 0:
+                    self.devs = ['-']
+
             self.devs = '\n'.join(self.devs)
             devslbl = QtGui.QLabel("List of devices found:")
             self.textboxDevs = QtGui.QPlainTextEdit(self.devs)
@@ -657,7 +814,12 @@ class wildcardsGUI(QtGui.QDialog):
                 noflag = 1
         if noflag == 0:
             for dev in self.newlistDevs:
-                self.parent.devlist.append(dev)
+                if self.parent.ctrl_library == "Tango":
+                    self.parent.devlist.append(dev)
+                elif self.parent.ctrl_library == "Randomizer":
+                    self.parent.devlist.append(dev)
+                elif self.parent.ctrl_library == "EPICS":
+                    self.parent.PV_list.append(dev)
             self.parent.reloadflag = 1
             self.close()
 
@@ -964,6 +1126,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
     def __init__(self, parent = Dialog):
         super(PyQtGraphPlotter, self).__init__(parent)
         self.ctrl_library = parent.ctrl_library
+        self.parent = parent
         self.central_widget = QtGui.QStackedWidget()
         mathfunctionstxt  = ['abs','acos','asin','atan','atan2','ceil','cos','cosh','degrees','e','exp','fabs','floor','fmod','frexp','hypot','ldexp','log','log10','modf','pi','pow','radians','sin','sinh','sqrt','tan','tanh']
         mathfunctionsreal = [abs,acos,asin,atan,atan2,ceil,cos,cosh,degrees,e,exp,fabs,floor,fmod,frexp,hypot,ldexp,log,log10,modf,pi,pow,radians,sin,sinh,sqrt,tan,tanh]
@@ -972,7 +1135,11 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             self.mathdict[mathfunctionstxt[n]] = mathfunctionsreal[n]
         self.setCentralWidget(self.central_widget)
         self.contWidget = PyQtGraphContainerWidget(self)
-        self.contWidget.plotbtn.clicked.connect(self.startstop)
+        if self.parent.archivingonly == 0:
+            self.contWidget.plotbtn.clicked.connect(self.startstop)
+        elif self.parent.archivingonly == 1:
+            self.contWidget.plotbtn.setEnabled(False)
+            self.contWidget.plotbtn.setText("Archiving Mode")
         self.contWidget.loadbtn.clicked.connect(self.loadclick)
         self.contWidget.savebtn.clicked.connect(self.saveclick)
         self.contWidget.showhidebtn.clicked.connect(self.PlotSettings)
@@ -1004,6 +1171,9 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                         val = bd.read_attribute(self.attr).value
                 elif self.ctrl_library == "Randomizer":
                     val = random.random()
+                elif self.ctrl_library == "EPICS":
+                    PV = epics.PV(str(inp), auto_monitor=True)
+                    val = PV.value
                 for n in range(len(val)):
                     self.vectorlist.append('Vector N'+str(n))
                     denm = str(self.devslist[ind]).split('/')
@@ -1013,8 +1183,12 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
         self.graphTime = parent.toSpecminutes
         self.updateFreq = parent.toSpecupdateFrequency
         self.contWidget.plot.setXRange(-60 * 1.01 * self.graphTime,0)
-        self.setWindowTitle(self.attr)
-
+        if self.ctrl_library == "Tango":
+            self.setWindowTitle(self.attr)
+        elif self.ctrl_library == "Randomizer":
+            self.setWindowTitle(self.attr)
+        elif self.ctrl_library == "EPICS":
+            self.setWindowTitle("Process Variables")
         self.colorlist = ['b', 'g', 'r', 'c', 'm', 'y', 'w']
         self.devsPlotting = []
         colorlist=[[255,255,255],[255,0,0],[0,255,0],[0,0,255],[255,255,0],[255,0,255],[0,255,255],[128,0,0],[139,0,0],[165,42,42],[178,34,34],[220,20,60],[255,99,71],[255,127,80],[205,92,92],[240,128,128],[233,150,122],[250,128,114],[255,160,122],[255,69,0],[255,140,0],[255,165,0],[255,215,0],[184,134,11],[218,165,32],[238,232,170],[189,183,107],[240,230,140],[128,128,0],[154,205,50],[85,107,47],[107,142,35],[124,252,0],[127,255,0],[173,255,47],[0,100,0],[0,128,0],[34,139,34],[50,205,50],[144,238,144],[152,251,152],[143,188,143],[0,250,154],[0,255,127],[46,139,87],[102,205,170],[60,179,113],[32,178,170],[47,79,79],[0,128,128],[0,139,139],[224,255,255],[0,206,209],[64,224,208],[72,209,204],[175,238,238],[127,255,212],[176,224,230],[95,158,160],[70,130,180],[100,149,237],[0,191,255],[30,144,255],[173,216,230],[135,206,235],[135,206,250],[25,25,112],[0,0,128],[0,0,139],[0,0,205],[65,105,225],[138,43,226],[75,0,130],[72,61,139],[106,90,205],[123,104,238],[147,112,219],[139,0,139],[148,0,211],[153,50,204],[186,85,211],[128,0,128],[216,191,216],[221,160,221],[238,130,238],[218,112,214],[199,21,133],[219,112,147],[255,20,147],[255,105,180],[255,182,193],[255,192,203],[250,235,215],[245,245,220],[255,228,196],[255,235,205],[245,222,179],[255,248,220],[255,250,205],[250,250,210],[255,255,224],[139,69,19],[160,82,45],[210,105,30],[205,133,63],[244,164,96],[222,184,135],[210,180,140],[188,143,143],[255,228,181],[255,222,173],[255,218,185],[255,228,225],[255,240,245],[250,240,230],[253,245,230],[255,239,213],[255,245,238],[245,255,250],[112,128,144],[119,136,153],[176,196,222],[230,230,250],[255,250,240],[240,248,255],[248,248,255],[240,255,240],[255,255,240],[240,255,255],[105,105,105],[128,128,128],[169,169,169],[192,192,192],[211,211,211],[220,220,220],[245,245,245]]
@@ -1066,7 +1240,13 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
         self.contWidget.setLayout(self.contWidget.layout)
 
         self.pyqtgraphtimer.timeout.connect(self.updater)
-        self.ylabel = self.attr
+        if self.ctrl_library == "Tango":
+            self.ylabel = self.attr
+        elif self.ctrl_library == "Randomizer":
+            self.ylabel = self.attr
+        elif self.ctrl_library == "EPICS":
+            self.ylabel = "PV value(s)"
+
         self.contWidget.plot.setLabel('left',self.ylabel,color='white',size = 30)
         self.scrollarea.setVisible(False)
 
@@ -1165,18 +1345,24 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
         elif self.scalarflag == 1:
             for n in range(self.cols):
                 self.curve.append(self.contWidget.plot.getPlotItem().plot(name=self.colnames[n]))
-                if self.ctrl_library == "Tango":
-                    prox = [PT.DeviceProxy(self.devslist[n])]
-                    for bd in prox:
-                        val = bd.read_attribute(self.attr).value
-                elif self.ctrl_library == "Randomizer":
-                    val = random.random()
-                self.devsPlotting.append(1)
+                if self.parent.archivingonly == 0:
+                    if self.ctrl_library == "Tango":
+                        prox = [PT.DeviceProxy(self.devslist[n])]
+                        for bd in prox:
+                            val = bd.read_attribute(self.attr).value
+                    elif self.ctrl_library == "Randomizer":
+                        val = random.random()
+                    elif self.ctrl_library == "EPICS":
+                        #PV = epics.PV(str(self.devslist[n]), auto_monitor=True)
+                        val = epics.PV(str(self.devslist[n]), auto_monitor=True).value
+                    self.data_y.append([val])
+                    self.data_y0.append([val])
+                else:
+                    self.data_y.append([0])
+                    self.data_y0.append([0])
                 self.data_x.append([time.time()])
-
+                self.devsPlotting.append(1)
                 self.equations.append('none')
-                self.data_y.append([val])
-                self.data_y0.append([val])
 
     def updater(self):
         maxval = 0
@@ -1189,6 +1375,9 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                         val = bd.read_attribute(self.attr).value
                 elif self.ctrl_library == "Randomizer":
                     val = random.random()
+                elif self.ctrl_library == "EPICS":
+                    #PV = epics.PV(str(self.devslist[n]), auto_monitor=True)
+                    val = epics.PV(str(self.devslist[n]), auto_monitor=True).value
                 preindex = 0
                 for m in range(len(val)):
                     self.data_y0[m + preindex].append(val[m])
@@ -1223,6 +1412,9 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                         val = bd.read_attribute(self.attr).value
                 elif self.ctrl_library == "Randomizer":
                     val = self.data_y[n][-1]+0.2*(0.5-random.random())
+                elif self.ctrl_library == "EPICS":
+                    #PV = epics.PV(str(self.devslist[n]), auto_monitor=True)
+                    val = epics.PV(str(self.devslist[n]), auto_monitor=True).value
                 self.data_y0[n].append(val)
             for n, inp in enumerate(self.devslist):
                 if self.ctrl_library == "Tango":
@@ -1231,6 +1423,9 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                         val = bd.read_attribute(self.attr).value
                 elif self.ctrl_library == "Randomizer":
                     val = self.data_y[n][-1]+0.2*(0.5-random.random())
+                elif self.ctrl_library == "EPICS":
+                    #PV = epics.PV(str(self.devslist[n]), auto_monitor=True)
+                    val = epics.PV(str(self.devslist[n]), auto_monitor=True).value
                 value = self.funccalculator(val,self.equations[n],len(self.data_y0[n])-1)
                 self.data_y[n].append(value)
                 self.data_x[n].append(time.time())
@@ -1290,9 +1485,10 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                     self.curve[n].setData(self.data_x[n], self.data_y[n], pen=pg.mkPen(self.colorind[n], width=2))
             elif self.scalarflag == 1:
                 for n in range(self.cols):
-                    for m in range(len(self.data_y[n])):
-                        self.data_y[n][m] = self.funccalculator(self.data_y0[n][m],self.equations[n],m)
-                    self.curve[n].setData(self.data_x[n], self.data_y[n], pen=pg.mkPen(self.colorind[n], width=2))
+                    if len(self.data_y[n]) > 0:
+                        for m in range(len(self.data_y[n])):
+                            self.data_y[n][m] = self.funccalculator(self.data_y0[n][m],self.equations[n],m)
+                        self.curve[n].setData(self.data_x[n], self.data_y[n], pen=pg.mkPen(self.colorind[n], width=2))
 
     def loadclick(self):
         items = ['From File', 'From DataBase']
@@ -1362,10 +1558,36 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                 ittt = ArchiverCalendarWidget(self)
                 ittt.exec_()
                 if self.okflag == 1:
-                    items2 = ['Cassandra']
+                    items2 = ['ESS Archiver [EPICS]','MAX IV Archiver (Cassandra) [Tango]']
                     item2, ok = QtGui.QInputDialog.getItem(self, 'Database Type', 'Select database',items2, 0, False)
                     if ok and item2:
-                        if str(item2) == 'Cassandra':
+                        if str(item2) == 'ESS Archiver [EPICS]':
+                            archiver_url = 'http://archiver-01.tn.esss.lu.se:17668/retrieval/data/getData.json?pv={}&from={}&to={}'
+                            trystart = self.startdate.strftime('%Y-%m-%dT%H:%M:%SZ')
+                            trystop = self.enddate.strftime('%Y-%m-%dT%H:%M:%SZ')
+                            #PV = epics.PV(str(self.devslist[n]), auto_monitor=True)
+                            #val = epics.PV(str(self.devslist[n]), auto_monitor=True).value
+                            x = []
+                            y = []
+                            data_x_i = []
+                            data_y_i = []
+                            data_x_ff = []
+                            data_x_f = []
+                            for ind, PV in enumerate(self.colnames):
+                                url = archiver_url.format(PV,trystart,trystop)
+                                pv_page = requests.get(url)
+                                pv_rawdata = json.loads(pv_page.content)
+                                pv_value=[i['val'] for i in pv_rawdata[0]['data']]
+                                pv_time=[datetime.datetime.utcfromtimestamp(i['secs']+i['nanos']/1e9) for i in pv_rawdata[0]['data']]
+                                x.append(pv_time)
+                                y.append(pv_value)
+                                data_x_i.append(pv_time)
+                                data_x_f.append([time.mktime(xx.timetuple()) for xx in data_x_i[ind]])
+                                data_x_ff.append([datetime.datetime.fromtimestamp(value).strftime("%Y/%m/%d %H:%M:%S") for value in data_x_f[ind]])
+                                data_y_i.append([float(i) for i in y[ind]])
+
+
+                        if str(item2) == 'MAX IV Archiver (Cassandra) [Tango]':
                             try:
                                 from Cassandra_ImportData import CassImp
                                 errflag = 0
@@ -1389,40 +1611,40 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                                     data_x_f.append([time.mktime(xx.timetuple()) for xx in data_x_i[ind]])
                                     data_x_ff.append([datetime.datetime.fromtimestamp(value).strftime("%Y/%m/%d %H:%M:%S") for value in data_x_f[ind]])
                                     data_y_i.append([float(i) for i in y[ind]])
-                                reply = QtGui.QMessageBox.question(self, 'Loading data', 'Enter data analysis mode?', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
-                                if reply == QtGui.QMessageBox.Yes:
-                                    self.pyqtgraphtimer.stop()
-                                    self.contWidget.plotbtn.setText('Start Plotting')
-                                    for n in range(self.cols):
-                                        self.curve[n].clear()
-                                    for n in range(len(x)):
-                                        if n == 0:
-                                            xmin = min(data_x_f[n])
-                                            xmax = max(data_x_f[n])
-                                        else:
-                                            if min(data_x_f[n]) < xmin:
-                                                xmin = min(data_x_f[n])
-                                            if max(data_x_f[n]) > xmax:
-                                                xmin = min(data_x_f[n])
-                                        self.curve[n].setData(data_x_f[n],data_y_i[n], pen=pg.mkPen(self.colorind[n], width=2, style=QtCore.Qt.DotLine))
-                                        xtii = self.contWidget.plot.getAxis('bottom')
-                                        xdict0 = dict(zip(data_x_f[0],data_x_ff[0]))
-                                        xdict = dict(zip(data_x_f[n],data_x_ff[n]))
-                                        xlen = len(data_x_f[0])
-                                        xticks = [list(xdict0.items())[1::int(xlen*0.95)],list(xdict.items())[1::2]]
-                                        xtii.setTicks(xticks)
-                                    self.contWidget.plot.setXRange(xmin,xmax)
+                        reply = QtGui.QMessageBox.question(self, 'Loading data', 'Enter data analysis mode?', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
+                        if reply == QtGui.QMessageBox.Yes:
+                            self.pyqtgraphtimer.stop()
+                            self.contWidget.plotbtn.setText('Start Plotting')
+                            for n in range(self.cols):
+                                self.curve[n].clear()
+                            for n in range(len(x)):
+                                if n == 0:
+                                    xmin = min(data_x_f[n])
+                                    xmax = max(data_x_f[n])
                                 else:
-                                    plotW = pg.plot(title="Loaded Data from Archiver")
-                                    for n in range(self.cols):
-                                        plotW.plot(data_x_f[n],data_y_i[n],pen=pg.mkPen(self.colorind[n], width=2),name="Line "+str(n),tickStrings = data_x_ff[n])
-                                        xtii = plotW.getAxis('bottom')
-                                        xdict0 = dict(zip(data_x_f[0],data_x_ff[0]))
-                                        xdict = dict(zip(data_x_f[n],data_x_ff[n]))
-                                        xlen = len(data_x_f[0])
-                                        xticks = [list(xdict0.items())[1::int(xlen*0.95)],list(xdict.items())[1::2]]
-                                        xtii.setTicks(xticks)
-                                    plotW.showGrid(x=True,y=True)
+                                    if min(data_x_f[n]) < xmin:
+                                        xmin = min(data_x_f[n])
+                                    if max(data_x_f[n]) > xmax:
+                                        xmin = min(data_x_f[n])
+                                self.curve[n].setData(data_x_f[n],data_y_i[n], pen=pg.mkPen(self.colorind[n], width=2, style=QtCore.Qt.DotLine))
+                                xtii = self.contWidget.plot.getAxis('bottom')
+                                xdict0 = dict(zip(data_x_f[0],data_x_ff[0]))
+                                xdict = dict(zip(data_x_f[n],data_x_ff[n]))
+                                xlen = len(data_x_f[0])
+                                xticks = [list(xdict0.items())[1::int(xlen*0.95)],list(xdict.items())[1::2]]
+                                xtii.setTicks(xticks)
+                            self.contWidget.plot.setXRange(xmin,xmax)
+                        else:
+                            plotW = pg.plot(title="Loaded Data from Archiver")
+                            for n in range(self.cols):
+                                plotW.plot(data_x_f[n],data_y_i[n],pen=pg.mkPen(self.colorind[n], width=2),name="Line "+str(n),tickStrings = data_x_ff[n])
+                                xtii = plotW.getAxis('bottom')
+                                xdict0 = dict(zip(data_x_f[0],data_x_ff[0]))
+                                xdict = dict(zip(data_x_f[n],data_x_ff[n]))
+                                xlen = len(data_x_f[0])
+                                xticks = [list(xdict0.items())[1::int(xlen*0.95)],list(xdict.items())[1::2]]
+                                xtii.setTicks(xticks)
+                            plotW.showGrid(x=True,y=True)
     def saveclick(self):
         options = QtGui.QFileDialog.Options()
         options |= QtGui.QFileDialog.DontUseNativeDialog
