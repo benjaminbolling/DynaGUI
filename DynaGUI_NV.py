@@ -1332,6 +1332,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
         self.data_y0 = []
         self.time_0 = -1
         self.equations = []
+        self.archivemode = 0
         if self.scalarflag == 0:
             for n, inp in enumerate(self.devslist):
                 if self.ctrl_library == "Tango":
@@ -1382,7 +1383,6 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                 elif self.ctrl_library == "Randomizer":
                     val = random.random()
                 elif self.ctrl_library == "EPICS":
-                    #PV = epics.PV(str(self.devslist[n]), auto_monitor=True)
                     val = epics.PV(str(self.devslist[n]), auto_monitor=True).value
                 preindex = 0
                 for m in range(len(val)):
@@ -1459,10 +1459,12 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             del self.data_x
             del self.data_y
             del self.data_y0
-            self.data_x = [0]
+            self.data_x = []
             self.data_y = []
+            self.data_y0 = []
             for n in range(self.cols):
                 self.curve[n].clear()
+                self.data_x.append([0])
                 self.data_y.append([0])
                 self.data_y0.append([0])
 
@@ -1483,7 +1485,8 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             pass
 
     def acceptNewPlotSettings(self):
-        self.contWidget.plot.setXRange(-60 * 1.01 * self.graphTime,0)
+        if self.pyqtgraphtimer.isActive():
+            self.contWidget.plot.setXRange(-60 * 1.01 * self.graphTime,0)
         self.contWidget.plot.setLabel('left',self.ylabel,color='white',size = 30)
         reply = QtGui.QMessageBox.question(self, 'Equations application', 'Do you want the equations to be applied on previous values in the plot?', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
         if reply == QtGui.QMessageBox.Yes:
@@ -1494,15 +1497,34 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                     self.curve[n].setData(self.data_x[n], self.data_y[n], pen=pg.mkPen(self.colorind[n], width=2))
             elif self.scalarflag == 1:
                 for n in range(self.cols):
-                    if len(self.data_y[n]) > 0:
-                        for m in range(len(self.data_y[n])):
-                            self.data_y[n][m] = self.funccalculator(self.data_y0[n][m],self.equations[n],m)
-                        self.curve[n].setData(self.data_x[n], self.data_y[n], pen=pg.mkPen(self.colorind[n], width=2))
+                    for m in range(len(self.data_y[n])):
+                        self.data_y[n][m] = self.funccalculator(self.data_y0[n][m],self.equations[n],m)
+                    if n == 0:
+                        xmin = min(data_x_f[n])
+                        xmax = max(data_x_f[n])
+                    else:
+                        if min(data_x_f[n]) < xmin:
+                            xmin = min(data_x_f[n])
+                        if max(data_x_f[n]) > xmax:
+                            xmin = min(data_x_f[n])
+                    timestamps = []
+                    for timestamp in self.data_x[n]:
+                        timestamps.append(timestamp - time.time() + self.coldelays[n])
+                        self.curve[n].setData(timestamps,self.data_y[n], pen=pg.mkPen(self.colorind[n], width=2, style=QtCore.Qt.DotLine))
+                    #xtii = self.contWidget.plot.getAxis('bottom')
+                    #xdict0 = dict(zip(data_x_f[0],data_x_ff[0]))
+                    #xdict = dict(zip(data_x_f[n],data_x_ff[n]))
+                    #xlen = len(data_x_f[0])
+                    #xticks = [list(xdict0.items())[1::int(xlen*0.95)],list(xdict.items())[1::2]]
+                    #xtii.setTicks(xticks)
+                self.contWidget.plot.setXRange(xmin,xmax)
 
     def loadclick(self):
         items = ['From File', 'From DataBase']
         item, ok = QtGui.QInputDialog.getItem(self, 'Loadtype', 'Select where to load data from:',items, 0, False)
         if ok and item:
+            self.contWidget.plotbtn.setText('Start Plotting')
+            self.pyqtgraphtimer.stop()
             if str(item) == 'From File':
                 nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File')
                 if nameoffile:
@@ -1570,7 +1592,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                     items2 = ['ESS Archiver [EPICS]','MAX IV Archiver (Cassandra) [Tango]']
                     item2, ok = QtGui.QInputDialog.getItem(self, 'Database Type', 'Select database',items2, 0, False)
                     if ok and item2:
-                        stoplag = 0
+                        stopflag = 0
                         if str(item2) == 'ESS Archiver [EPICS]':
                             archiver_url = 'http://archiver-01.tn.esss.lu.se:17668/retrieval/data/getData.json?pv={}&from={}&to={}'
                             trystart = self.startdate.strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -1625,6 +1647,10 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                         if stopflag == 0:
                             reply = QtGui.QMessageBox.question(self, 'Loading data', 'Enter data analysis mode?', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
                             if reply == QtGui.QMessageBox.Yes:
+                                self.archivemode = 1
+                                self.data_x = data_x_f
+                                self.data_y = data_y_i
+                                self.data_y0 = data_y_i
                                 self.pyqtgraphtimer.stop()
                                 self.contWidget.plotbtn.setText('Start Plotting')
                                 for n in range(self.cols):
@@ -1671,6 +1697,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             file0.close()
 
     def startstop(self):
+        self.archivemode = 0
         if self.contWidget.plotbtn.text() == 'Start Plotting':
             self.contWidget.plotbtn.setText('Stop Plotting')
             self.pyqtgraphtimer.start(1000/self.updateFreq)
@@ -1783,8 +1810,9 @@ class PyQtGraphSetup(QtGui.QDialog):
         equationslbl.clicked.connect(self.mathfunctionslist)
         okbtn = QtGui.QPushButton('Ok')
         nobtn = QtGui.QPushButton('Cancel')
-        listgui.addRow(freqlbl,self.textboxF)
-        listgui.addRow(minulbl,self.textboxM)
+        if self.parent.parent.archivingonly == 0 and self.parent.archivemode == 0:
+            listgui.addRow(freqlbl,self.textboxF)
+            listgui.addRow(minulbl,self.textboxM)
         listgui.addRow(yaxilbl,self.textboxL)
 
         self.coldelays = self.parent.coldelays
@@ -1798,9 +1826,9 @@ class PyQtGraphSetup(QtGui.QDialog):
             textbox = QtGui.QLineEdit(str(self.parent.equations[N]), self.eqChBoxGroup)
             lbl = QtGui.QLabel(str(self.parent.colnames[N])+" (line "+str(N)+"):")
             spin = QtGui.QDoubleSpinBox()
-            spin.setValue(float(self.coldelays[N]))
             spin.setDecimals(9)
             spin.setRange(-1e8, 1e8) # +/- 3 years maximum
+            spin.setValue(float(self.coldelays[N]))
             self.eqlayout.addWidget(lbl,row,0,1,1)
             self.eqlayout.addWidget(textbox,row,1,1,1)
             self.eqlayout.addWidget(spin,row,2,1,1)
