@@ -180,7 +180,7 @@ class Dialog(QtGui.QWidget):
         self.getallDevs()
 
     def savebtnclicked(self):
-        nameoffile = QtGui.QFileDialog.getSaveFileName(self, 'Save to File')
+        yesorno, nameoffile = QtGui.QFileDialog.getSaveFileName(self, 'Save to File')
         if not nameoffile:
             self.bottomlabel.setText("Cancelled save configuration.")
         else:
@@ -578,8 +578,11 @@ class Dialog(QtGui.QWidget):
             self.toSpecDevList = DevsNames
 
         if failflag == 0:
-            prep1D = prep1DGUI(self)
-            prep1D.exec_()
+            if self.archivingonly == 0:
+                prep1D = prep1DGUI(self)
+                prep1D.exec_()
+            else:
+                self.okflag = 1
             if self.okflag == 1:
                 lt = PyQtGraphPlotter(self)
                 lt.resize(800,600)
@@ -1144,6 +1147,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
         elif self.parent.archivingonly == 1:
             self.contWidget.plotbtn.setEnabled(False)
             self.contWidget.plotbtn.setText("Archiving Mode")
+            self.archivemode = 1
         self.contWidget.loadbtn.clicked.connect(self.loadclick)
         self.contWidget.savebtn.clicked.connect(self.saveclick)
         self.contWidget.showhidebtn.clicked.connect(self.PlotSettings)
@@ -1222,7 +1226,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             btn.setStyleSheet("background-color:rgb("+col0+","+col1+","+col2+","+")");
             btn.setFixedWidth(20)
             chBox.setChecked(self.devsPlotting[ind])
-            chBox.stateChanged.connect(self.chBoxChange)
+            chBox.stateChanged.connect(self.chBoxCheck)
             btn.clicked.connect(partial(self.colorbtnRGBchange,str(ind)))
             try:
                 fm = QtGui2.QFontMetrics(chBox.font())
@@ -1256,6 +1260,9 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
         self.contWidget.plot.setLabel('left',self.ylabel,color='white',size = 30)
         self.scrollarea.setVisible(False)
 
+        if self.archivemode == 1:
+            self.loadclick()
+
     def showhidelegend(self):
         if self.contWidget.showhidelegends.text() == "Hide legend":
             self.contWidget.showhidelegends.setText("Show legend")
@@ -1287,19 +1294,31 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                             col1 = str(cm[1])
                             col2 = str(cm[2])
                             btn.setStyleSheet("background-color:rgb("+col0+","+col1+","+col2+","+")");
+                    self.chBoxCheck()
+            else:
+                QtGui.QMessageBox.information(self,"Error",'Incorrect N of inputs')
 
-    def chBoxChange(self):
+    def chBoxCheck(self):
         devsPlotting = []
         for ind,chBox in enumerate(self.contWidget.chGroupBox.findChildren(QtGui.QCheckBox)):
             if chBox.isChecked() == 1:
                 devsPlotting.append(1)
-                self.curve[ind].setData(self.data_x[ind], self.data_y[ind])
+                timestamps = []
+                for timestamp in self.data_x[ind]:
+                    if self.archivemode == 0:
+                        timestamps.append(timestamp - time.time() + self.coldelays[ind])
+                    elif self.archivemode == 1:
+                        timestamps.append(timestamp + self.coldelays[ind])
+                self.curve[ind].setData(timestamps, self.data_y[ind],pen=pg.mkPen(self.colorind[ind], width=2))
+                # data_x_f.append([time.mktime(xx.timetuple()) for xx in data_x_i[ind]])
+                #xdata = [time.mktime(xx.timetuple()) for xx in timestamps[ind]]
+                #self.curve[ind].setData(xdata, self.data_y[ind])
             elif chBox.isChecked() == 0:
                 devsPlotting.append(0)
                 self.curve[ind].clear()
         self.devsPlotting = devsPlotting
 
-    def funccalculator(self,inputval,equation,nn):
+    def funccalculator(self,inputval,equation,nn,ind):
         outputval = inputval
         if equation == 'none':
             outputval = inputval
@@ -1314,7 +1333,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                     del(equationtrial2[0])
                 for n in range(len(equationtrial2)):
                     adding = equationtrial2[n].split("_LA")
-                    equationtrial3 = equationtrial3 + str(self.data_y0[int(adding[0])][nn])
+                    equationtrial3 = equationtrial3 + str(inputval[int(adding[0])][nn])
                     if len(adding) > 1:
                         equationtrial3 = equationtrial3 + str(adding[1])
                 equationtrial = equationtrial3.split('RV')
@@ -1322,7 +1341,8 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                 outputval = eval(str(equationtrial),{"__builtins__":None},self.mathdict)
             except:
                 outputval = inputval
-                print("Error evaluating equation.")
+                QtGui.QMessageBox.information(self,'Error', "Error evaluating equation for line "+str(ind)+".")
+                self.equations[ind] = 'none'
         return outputval
 
     def listInit(self):
@@ -1332,7 +1352,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
         self.data_y0 = []
         self.time_0 = -1
         self.equations = []
-        self.archivemode = 0
+        self.archivemode = self.parent.archivingonly
         if self.scalarflag == 0:
             for n, inp in enumerate(self.devslist):
                 if self.ctrl_library == "Tango":
@@ -1372,86 +1392,86 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                 self.equations.append('none')
 
     def updater(self):
-        maxval = 0
-        maxvallbl = -1
-        if self.scalarflag == 0:
-            for n, inp in enumerate(self.devslist):
-                if self.ctrl_library == "Tango":
-                    prox = [PT.DeviceProxy(inp)]
-                    for bd in prox:
-                        val = bd.read_attribute(self.attr).value
-                elif self.ctrl_library == "Randomizer":
-                    val = random.random()
-                elif self.ctrl_library == "EPICS":
-                    val = epics.PV(str(self.devslist[n]), auto_monitor=True).value
-                preindex = 0
-                for m in range(len(val)):
-                    self.data_y0[m + preindex].append(val[m])
-                for m in range(len(val)):
-                    value = self.funccalculator(val[m],self.equations[m],len(self.data_y0[m + preindex])-1)
-                    self.data_y[m + preindex].append(value)
-                    self.data_x[m + preindex].append(time.time())
-                    tormv = []
-                    for nn in range(len(self.data_x[m + preindex])):
-                        if self.data_x[m + preindex][nn] - time.time() < -60 * 1.01 * self.graphTime:
-                            tormv.append(nn)
-                    for nnn in range(len(tormv)):
-                        del(self.data_x[m + preindex][0])
-                        del(self.data_y[m + preindex][0])
-                        del(self.data_y0[m + preindex][0])
-                    timestamps = []
-                    for timestamp in self.data_x[m + preindex]:
-                        timestamps.append(timestamp - time.time())
-                    if self.devsPlotting[m + preindex] == 1:
-                        if value > maxval:
-                            maxval = value
-                            maxvallbl = m + preindex
-                        self.curve[m + preindex].setData(timestamps, self.data_y[m + preindex], pen=pg.mkPen(self.colorind[m + preindex], width=2))
-            self.contWidget.graphlbl1.setText("Max. value: "+str("{0:.4f}".format(maxval))+"\nfrom vector "+str(maxvallbl))
-        elif self.scalarflag == 1:
+        if self.archivemode == 0:
             maxval = 0
             maxvallbl = -1
-            for n, inp in enumerate(self.devslist):
-                if self.ctrl_library == "Tango":
-                    prox = [PT.DeviceProxy(inp)]
-                    for bd in prox:
-                        val = bd.read_attribute(self.attr).value
-                elif self.ctrl_library == "Randomizer":
-                    val = self.data_y[n][-1]+0.2*(0.5-random.random())
-                elif self.ctrl_library == "EPICS":
-                    #PV = epics.PV(str(self.devslist[n]), auto_monitor=True)
-                    val = epics.PV(str(self.devslist[n]), auto_monitor=True).value
-                self.data_y0[n].append(val)
-            for n, inp in enumerate(self.devslist):
-                if self.ctrl_library == "Tango":
-                    prox = [PT.DeviceProxy(inp)]
-                    for bd in prox:
-                        val = bd.read_attribute(self.attr).value
-                elif self.ctrl_library == "Randomizer":
-                    val = self.data_y[n][-1]+0.2*(0.5-random.random())
-                elif self.ctrl_library == "EPICS":
-                    #PV = epics.PV(str(self.devslist[n]), auto_monitor=True)
-                    val = epics.PV(str(self.devslist[n]), auto_monitor=True).value
-                value = self.funccalculator(val,self.equations[n],len(self.data_y0[n])-1)
-                self.data_y[n].append(value)
-                self.data_x[n].append(time.time())
-                tormv = []
-                for nn in range(len(self.data_x[n])):
-                    if self.data_x[n][nn] - time.time() < -60 * 1.01 * self.graphTime:
-                        tormv.append(nn)
-                for nnn in range(len(tormv)):
-                    del(self.data_x[n][0])
-                    del(self.data_y[n][0])
-                    del(self.data_y0[n][0])
-                timestamps = []
-                for timestamp in self.data_x[n]:
-                    timestamps.append(timestamp - time.time() + self.coldelays[n])
-                if self.devsPlotting[n] == 1:
-                    if value > maxval:
-                        maxval = value
-                        maxvallbl = n
-                    self.curve[n].setData(timestamps, self.data_y[n], pen=pg.mkPen(self.colorind[n], width=2))
-            self.contWidget.graphlbl1.setText("Max. value: "+str("{0:.4f}".format(maxval))+"\nfrom vector "+str(maxvallbl))
+            if self.scalarflag == 0:
+                for n, inp in enumerate(self.devslist):
+                    if self.ctrl_library == "Tango":
+                        prox = [PT.DeviceProxy(inp)]
+                        for bd in prox:
+                            val = bd.read_attribute(self.attr).value
+                    elif self.ctrl_library == "Randomizer":
+                        val = random.random()
+                    elif self.ctrl_library == "EPICS":
+                        val = epics.PV(str(self.devslist[n]), auto_monitor=True).value
+                    preindex = 0
+                    for m in range(len(val)):
+                        self.data_y0[m + preindex].append(val[m])
+                    for m in range(len(val)):
+                        value = self.funccalculator(val[m],self.equations[m],len(self.data_y0[m + preindex])-1,n)
+                        self.data_y[m + preindex].append(value)
+                        self.data_x[m + preindex].append(time.time())
+                        tormv = []
+                        for nn in range(len(self.data_x[m + preindex])):
+                            if self.data_x[m + preindex][nn] - time.time() < -60 * 1.01 * self.graphTime:
+                                tormv.append(nn)
+                        for nnn in range(len(tormv)):
+                            del(self.data_x[m + preindex][0])
+                            del(self.data_y[m + preindex][0])
+                            del(self.data_y0[m + preindex][0])
+                        timestamps = []
+                        for timestamp in self.data_x[m + preindex]:
+                            timestamps.append(timestamp - time.time() + self.coldelays[n])
+                        if self.devsPlotting[m + preindex] == 1:
+                            if value > maxval:
+                                maxval = value
+                                maxvallbl = m + preindex
+                            self.curve[m + preindex].setData(timestamps, self.data_y[m + preindex], pen=pg.mkPen(self.colorind[m + preindex], width=2))
+            elif self.scalarflag == 1:
+                maxval = 0
+                maxvallbl = -1
+                for n, inp in enumerate(self.devslist):
+                    if self.ctrl_library == "Tango":
+                        prox = [PT.DeviceProxy(inp)]
+                        for bd in prox:
+                            val = bd.read_attribute(self.attr).value
+                    elif self.ctrl_library == "Randomizer":
+                        val = self.data_y[n][-1]+0.2*(0.5-random.random())
+                    elif self.ctrl_library == "EPICS":
+                        #PV = epics.PV(str(self.devslist[n]), auto_monitor=True)
+                        val = epics.PV(str(self.devslist[n]), auto_monitor=True).value
+                    self.data_y0[n].append(val)
+                for n, inp in enumerate(self.devslist):
+                    if self.ctrl_library == "Tango":
+                        prox = [PT.DeviceProxy(inp)]
+                        for bd in prox:
+                            val = bd.read_attribute(self.attr).value
+                    elif self.ctrl_library == "Randomizer":
+                        val = self.data_y[n][-1]+0.2*(0.5-random.random())
+                    elif self.ctrl_library == "EPICS":
+                        #PV = epics.PV(str(self.devslist[n]), auto_monitor=True)
+                        val = epics.PV(str(self.devslist[n]), auto_monitor=True).value
+                    value = self.funccalculator(val,self.equations[n],len(self.data_y0[n])-1,n)
+                    self.data_y[n].append(value)
+                    self.data_x[n].append(time.time())
+                    tormv = []
+                    for nn in range(len(self.data_x[n])):
+                        if self.data_x[n][nn] - time.time() < -60 * 1.01 * self.graphTime:
+                            tormv.append(nn)
+                    for nnn in range(len(tormv)):
+                        del(self.data_x[n][0])
+                        del(self.data_y[n][0])
+                        del(self.data_y0[n][0])
+                    timestamps = []
+                    for timestamp in self.data_x[n]:
+                        timestamps.append(timestamp - time.time() + self.coldelays[n])
+                    if self.devsPlotting[n] == 1:
+                        if value > maxval:
+                            maxval = value
+                            maxvallbl = n
+                        self.curve[n].setData(timestamps, self.data_y[n], pen=pg.mkPen(self.colorind[n], width=2))
+            self.contWidget.graphlbl1.setText("Maximum value / from line:\n"+str("{0:.10f}".format(maxval))+" / "+str(maxvallbl))
 
     def reset(self):
         reply = QtGui.QMessageBox.question(self, 'Reset', 'Are you sure you want to clear all data? All plotting data will be lost.', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
@@ -1475,53 +1495,43 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             activeflag = 0
         settingsW = PyQtGraphSetup(self)
         settingsW.exec_()
-        try:
-            if self.okflag == 1:
-                self.acceptNewPlotSettings()
-                if activeflag == 1:
-                    self.pyqtgraphtimer.stop()
-                    self.pyqtgraphtimer.start(1000/self.updateFreq)
-        except:
-            pass
+        if self.okflag == 1:
+            self.acceptNewPlotSettings()
+            self.chBoxCheck()
+            if activeflag == 1:
+                self.pyqtgraphtimer.stop()
+                self.pyqtgraphtimer.start(1000/self.updateFreq)
 
     def acceptNewPlotSettings(self):
         if self.pyqtgraphtimer.isActive():
             self.contWidget.plot.setXRange(-60 * 1.01 * self.graphTime,0)
         self.contWidget.plot.setLabel('left',self.ylabel,color='white',size = 30)
-        reply = QtGui.QMessageBox.question(self, 'Equations application', 'Do you want the equations to be applied on previous values in the plot?', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
-        if reply == QtGui.QMessageBox.Yes:
+        if self.archivemode == 0:
+            reply = QtGui.QMessageBox.question(self, 'Equations application', 'Do you want the equations to be applied on previous values in the plot?', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
+            if reply == QtGui.QMessageBox.Yes:
+                applyall = True
+            else:
+                applyall = False
+        else:
+            applyall = True
+        if applyall == True:
             if self.scalarflag == 0:
                 for n in range(self.cols):
                     for m in range(len(self.data_y[n])):
-                        self.data_y[n][m] = self.funccalculator(self.data_y0[n][m],self.equations[n],m)
+                        self.data_y[n][m] = self.funccalculator(self.data_y0[n][m],self.equations[n],m,n)
                     self.curve[n].setData(self.data_x[n], self.data_y[n], pen=pg.mkPen(self.colorind[n], width=2))
             elif self.scalarflag == 1:
+                self.data_y.clear()
                 for n in range(self.cols):
-                    for m in range(len(self.data_y[n])):
-                        self.data_y[n][m] = self.funccalculator(self.data_y0[n][m],self.equations[n],m)
-                    if n == 0:
-                        xmin = min(data_x_f[n])
-                        xmax = max(data_x_f[n])
-                    else:
-                        if min(data_x_f[n]) < xmin:
-                            xmin = min(data_x_f[n])
-                        if max(data_x_f[n]) > xmax:
-                            xmin = min(data_x_f[n])
-                    timestamps = []
-                    for timestamp in self.data_x[n]:
-                        timestamps.append(timestamp - time.time() + self.coldelays[n])
-                        self.curve[n].setData(timestamps,self.data_y[n], pen=pg.mkPen(self.colorind[n], width=2, style=QtCore.Qt.DotLine))
-                    #xtii = self.contWidget.plot.getAxis('bottom')
-                    #xdict0 = dict(zip(data_x_f[0],data_x_ff[0]))
-                    #xdict = dict(zip(data_x_f[n],data_x_ff[n]))
-                    #xlen = len(data_x_f[0])
-                    #xticks = [list(xdict0.items())[1::int(xlen*0.95)],list(xdict.items())[1::2]]
-                    #xtii.setTicks(xticks)
-                self.contWidget.plot.setXRange(xmin,xmax)
+                    data_y = []
+                    for m in range(len(self.data_y0[n])):
+                        data_y.append(self.funccalculator(self.data_y0[n][m],self.equations[n],m,n))
+                    self.data_y.append(data_y)
 
     def loadclick(self):
         items = ['From File', 'From DataBase']
-        item, ok = QtGui.QInputDialog.getItem(self, 'Loadtype', 'Select where to load data from:',items, 0, False)
+        dlg = QtGui.QInputDialog(self)
+        item, ok = QtGui.QInputDialog.getItem(self, 'Loadtype', 'Select where to load data from:',items, 0, False, [0,0])
         if ok and item:
             self.contWidget.plotbtn.setText('Start Plotting')
             self.pyqtgraphtimer.stop()
@@ -1558,16 +1568,18 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                     if reply == QtGui.QMessageBox.Yes:
                         self.pyqtgraphtimer.stop()
                         self.contWidget.plotbtn.setText('Start Plotting')
+                        equations = []
                         for n in range(self.cols):
                             self.curve[n].clear()
-
+                            equations.append('none')
+                        self.equations = equations
                         for n in range(len(data_x)):
                             data_x_i = [float(i) for i in data_x_L[n]]
                             data_x_f = []
                             for m in range(len(data_x_i)):
                                 data_x_f.append((data_x_i[m]-data_x_i[0])/float(timeinfo))
-
                             data_y_i = [float(i) for i in data_y_L[n]]
+
                             self.curve[n].setData(data_x_f, data_y_i, pen=pg.mkPen(self.colorind[n], width=2))
                             self.contWidget.plot.setXRange(data_x_f[0],data_x_f[len(data_x_f)-1])
                     else:
@@ -1650,11 +1662,18 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                                 self.archivemode = 1
                                 self.data_x = data_x_f
                                 self.data_y = data_y_i
-                                self.data_y0 = data_y_i
-                                self.pyqtgraphtimer.stop()
-                                self.contWidget.plotbtn.setText('Start Plotting')
+                                self.data_y0 = data_y_i[:]
+                                if self.contWidget.plotbtn.text() == 'Stop Plotting':
+                                    self.pyqtgraphtimer.stop()
+                                    self.contWidget.plotbtn.setText('Start Plotting')
+                                equations = []
+                                coldelays = []
                                 for n in range(self.cols):
                                     self.curve[n].clear()
+                                    coldelays.append(0)
+                                    equations.append('none')
+                                self.equations = equations
+                                self.coldelays = coldelays
                                 for n in range(len(x)):
                                     if n == 0:
                                         xmin = min(data_x_f[n])
@@ -1664,7 +1683,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                                             xmin = min(data_x_f[n])
                                         if max(data_x_f[n]) > xmax:
                                             xmin = min(data_x_f[n])
-                                    self.curve[n].setData(data_x_f[n],data_y_i[n], pen=pg.mkPen(self.colorind[n], width=2, style=QtCore.Qt.DotLine))
+                                    self.curve[n].setData(data_x_f[n],data_y_i[n], pen=pg.mkPen(self.colorind[n], width=2))
                                     xtii = self.contWidget.plot.getAxis('bottom')
                                     xdict0 = dict(zip(data_x_f[0],data_x_ff[0]))
                                     xdict = dict(zip(data_x_f[n],data_x_ff[n]))
@@ -1846,8 +1865,7 @@ class PyQtGraphSetup(QtGui.QDialog):
         nobtn.clicked.connect(self.cancelfunc)
 
     def mathfunctionslist(self):
-        QtGui.QMessageBox.information(self,'Mathematical functions accepter',str(self.parent.mathdict.keys()))
-
+        QtGui.QMessageBox.information(self,'Mathematical functions accepted:\n',str(self.parent.mathdict.keys()))
 
     def confirmfunc(self):
         equations = []
@@ -1905,7 +1923,7 @@ class PyQtGraphContainerWidget(QtGui.QWidget):
         self.datapointlbl.setText("")
         self.layout.addWidget(self.datapointlbl, 1,3,2,1)
 
-        self.graphlbl1 = QtGui.QLabel("Max. value:")
+        self.graphlbl1 = QtGui.QLabel("Maximum value / from line:\n value / line")
         self.graphlbl1.setStyleSheet("font-size: 20pt")
         self.layout.addWidget(self.graphlbl1, 1,5,2,1)
 
