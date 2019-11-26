@@ -24,6 +24,7 @@ except:
     from PyQt4 import QtCore, QtGui
 import os, platform, sys, time, datetime, fnmatch
 import numpy as np
+import numexpr
 import pyqtgraph as pg
 from math import *
 from functools import partial
@@ -576,7 +577,7 @@ class Dialog(QtGui.QWidget):
             self.archivingonly = 0
             self.toSpecTaurusList = TaurusList
             self.toSpecDevList = DevsNames
-
+        self.okflag = 0
         if failflag == 0:
             if self.archivingonly == 0:
                 prep1D = prep1DGUI(self)
@@ -624,8 +625,7 @@ class Dialog(QtGui.QWidget):
             self.killdynamicbuttongroup()
             self.getallDevs()
             # The layout should be minimal, so make it unrealistically small (x=10, y=10 [px]) and then resize to minimum.
-            self.setMaximumSize(10,10)
-            self.resize(self.sizeHint().width(), self.sizeHint().height())
+            self.resizeDynaGUI()
             self.reloadflag = 0
 
     def listbtnclicked(self):
@@ -656,14 +656,16 @@ class Dialog(QtGui.QWidget):
                     if n not in devlist:
                         devlist.append(n)
                 self.PV_list = devlist
-
             self.maxsize = 0
             self.killdynamicbuttongroup()
             self.getallDevs()
+            self.resizeDynaGUI()
+            self.reloadflag = 0
+
             # The layout should be minimal, so make it unrealistically small (x=10, y=10 [px]) and then resize to minimum.
+    def resizeDynaGUI(self):
             self.setMaximumSize(10,10)
             self.resize(self.sizeHint().width(), self.sizeHint().height())
-            self.reloadflag = 0
 
     def closeEvent(self, event):
         reply = QtGui.QMessageBox.question(self, 'Exit', 'Are you sure you want to exit? All unsaved data will be lost.', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
@@ -730,6 +732,8 @@ class listbtnGUI(QtGui.QDialog):
         elif self.parent.ctrl_library == "Randomizer":
             if self.parent.devlist != self.newlistDevs:
                 self.parent.devlist = self.newlistDevs
+                self.parent.setMaximumSize(10,10)
+                self.parent.resize(self.sizeHint().width(), self.sizeHint().height())
                 self.parent.reloadflag = 1
 
             textAtts = str(self.textboxAttr.toPlainText())
@@ -1318,31 +1322,44 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                 self.curve[ind].clear()
         self.devsPlotting = devsPlotting
 
-    def funccalculator(self,inputval,equation,nn,ind):
-        outputval = inputval
+    def funccalculator(self,linenum,equation,nn):
         if equation == 'none':
-            outputval = inputval
+            outputval = self.data_y0[linenum][nn]
         else:
-            try:
-                equationtrial2 = equation.split("AL_")
-                if equationtrial2[0] == '':
-                    del(equationtrial2[0])
-                    equationtrial3 = str("")
-                else:
-                    equationtrial3 = str(equationtrial2[0])
-                    del(equationtrial2[0])
-                for n in range(len(equationtrial2)):
-                    adding = equationtrial2[n].split("_LA")
-                    equationtrial3 = equationtrial3 + str(inputval[int(adding[0])][nn])
-                    if len(adding) > 1:
-                        equationtrial3 = equationtrial3 + str(adding[1])
-                equationtrial = equationtrial3.split('RV')
-                equationtrial = str(inputval).join(equationtrial)
-                outputval = eval(str(equationtrial),{"__builtins__":None},self.mathdict)
-            except:
-                outputval = inputval
-                QtGui.QMessageBox.information(self,'Error', "Error evaluating equation for line "+str(ind)+".")
-                self.equations[ind] = 'none'
+        #    try:
+            list_A = equation.split("AL_")
+            list_C = []
+            for nA in range(len(list_A)):
+                list_B = list_A[nA].split("_LA")
+                for nB in range(len(list_B)):
+                    list_C.append(list_B[nB])
+
+            lineN = False
+            errorflag_index = False
+            for ind, nC in enumerate(list_C):
+                if lineN is False:
+                    lineN = True
+                elif lineN is True:
+                    lineN = False
+                    lineNN = int(list_C[ind])
+                    try:
+                        list_C[ind] = str(self.data_y0[lineNN][nn])
+                    except:
+                        errorflag_index = True
+            if errorflag_index == True:
+                QtGui.QMessageBox.information(self,"Error",'Cannot interpret equation for line '+str(linenum)+" - list index out of range.\n("+str(self.equations[linenum])+").")
+                self.equations[linenum] = 'none'
+                outputval = self.data_y0[linenum][nn]
+            elif errorflag_index == False:
+                pre_equation = str("".join(list_C))
+                list_D = pre_equation.split("RV")
+                das_equation = str(self.data_y0[linenum][nn]).join(list_D)
+                try:
+                    outputval = numexpr.evaluate(das_equation)
+                except:
+                    QtGui.QMessageBox.information(self,"Error",'Cannot interpret equation for line '+str(linenum)+":\n"+str(self.equations[linenum]))
+                    self.equations[linenum] = 'none'
+                    outputval = self.data_y0[linenum][nn]
         return outputval
 
     def listInit(self):
@@ -1409,7 +1426,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                     for m in range(len(val)):
                         self.data_y0[m + preindex].append(val[m])
                     for m in range(len(val)):
-                        value = self.funccalculator(val[m],self.equations[m],len(self.data_y0[m + preindex])-1,n)
+                        value = self.funccalculator(m,self.equations[m],len(self.data_y0[m + preindex])-1)
                         self.data_y[m + preindex].append(value)
                         self.data_x[m + preindex].append(time.time())
                         tormv = []
@@ -1452,7 +1469,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                     elif self.ctrl_library == "EPICS":
                         #PV = epics.PV(str(self.devslist[n]), auto_monitor=True)
                         val = epics.PV(str(self.devslist[n]), auto_monitor=True).value
-                    value = self.funccalculator(val,self.equations[n],len(self.data_y0[n])-1,n)
+                    value = self.funccalculator(n,self.equations[n],len(self.data_y0[n])-1)
                     self.data_y[n].append(value)
                     self.data_x[n].append(time.time())
                     tormv = []
@@ -1518,20 +1535,20 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             if self.scalarflag == 0:
                 for n in range(self.cols):
                     for m in range(len(self.data_y[n])):
-                        self.data_y[n][m] = self.funccalculator(self.data_y0[n][m],self.equations[n],m,n)
+                        self.data_y[n][m] = self.funccalculator(n,self.equations[n],m)
                     self.curve[n].setData(self.data_x[n], self.data_y[n], pen=pg.mkPen(self.colorind[n], width=2))
             elif self.scalarflag == 1:
                 self.data_y.clear()
                 for n in range(self.cols):
                     data_y = []
                     for m in range(len(self.data_y0[n])):
-                        data_y.append(self.funccalculator(self.data_y0[n][m],self.equations[n],m,n))
+                        data_y.append(self.funccalculator(n,self.equations[n],m))
                     self.data_y.append(data_y)
 
     def loadclick(self):
-        items = ['From File', 'From DataBase']
+        items = ['From DataBase', 'From File']
         dlg = QtGui.QInputDialog(self)
-        item, ok = QtGui.QInputDialog.getItem(self, 'Loadtype', 'Select where to load data from:',items, 0, False, [0,0])
+        item, ok = QtGui.QInputDialog.getItem(self, 'Loadtype', 'Select where to load data from:',items, 0, False)
         if ok and item:
             self.contWidget.plotbtn.setText('Start Plotting')
             self.pyqtgraphtimer.stop()
@@ -1598,6 +1615,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                         plotW.setLabel('bottom',information)
 
             elif str(item) == 'From DataBase':
+                self.okflag = 0
                 ittt = ArchiverCalendarWidget(self)
                 ittt.exec_()
                 if self.okflag == 1:
@@ -1607,8 +1625,10 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                         stopflag = 0
                         if str(item2) == 'ESS Archiver [EPICS]':
                             archiver_url = 'http://archiver-01.tn.esss.lu.se:17668/retrieval/data/getData.json?pv={}&from={}&to={}'
-                            trystart = self.startdate.strftime('%Y-%m-%dT%H:%M:%SZ')
-                            trystop = self.enddate.strftime('%Y-%m-%dT%H:%M:%SZ')
+                            trystart = datetime.datetime.combine(self.startdate,self.starttime)
+                            trystop = datetime.datetime.combine(self.enddate,self.stoptime)
+                            trystart = trystart.strftime('%Y-%m-%dT%H:%M:%SZ')
+                            trystop = trystop.strftime('%Y-%m-%dT%H:%M:%SZ')
                             #PV = epics.PV(str(self.devslist[n]), auto_monitor=True)
                             #val = epics.PV(str(self.devslist[n]), auto_monitor=True).value
                             x = []
@@ -1657,8 +1677,16 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                             else:
                                 stopflag = 1
                         if stopflag == 0:
-                            reply = QtGui.QMessageBox.question(self, 'Loading data', 'Enter data analysis mode?', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
-                            if reply == QtGui.QMessageBox.Yes:
+                            if self.parent.archivingonly == 0:
+                                reply = QtGui.QMessageBox.question(self, 'Loading data', 'Enter data analysis mode?', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
+                                if reply == QtGui.QMessageBox.Yes:
+                                    anamode = 1
+                                else:
+                                    anamode = 0
+                            else:
+                                anamode = 1
+                                self.parent.archivingonly = 0
+                            if anamode == 1:
                                 self.archivemode = 1
                                 self.data_x = data_x_f
                                 self.data_y = data_y_i
@@ -1691,6 +1719,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                                     xticks = [list(xdict0.items())[1::int(xlen*0.95)],list(xdict.items())[1::2]]
                                     xtii.setTicks(xticks)
                                 self.contWidget.plot.setXRange(xmin,xmax)
+                                self.contWidget.graphlbl1.setText(" ")
                             else:
                                 plotW = pg.plot(title="Loaded Data from Archiver")
                                 for n in range(self.cols):
@@ -1752,6 +1781,30 @@ class ArchiverCalendarWidget(QtGui.QDialog):
         self.cal2.clicked[QtCore.QDate].connect(self.showDate2)
         self.cal1.setMaximumDate(QtCore.QDate(datetime.datetime.now().year,datetime.datetime.now().month,datetime.datetime.now().day))
         self.cal2.setMaximumDate(QtCore.QDate(datetime.datetime.now().year,datetime.datetime.now().month,datetime.datetime.now().day))
+        self.starttimeHH = QtGui.QSpinBox()
+        self.starttimeHH.setValue(0)
+        self.starttimeHH.setMinimum(0)
+        self.starttimeHH.setMaximum(23)
+        self.stoptimeHH = QtGui.QSpinBox()
+        self.stoptimeHH.setValue(23)
+        self.stoptimeHH.setMinimum(0)
+        self.stoptimeHH.setMaximum(23)
+        self.starttimeMM = QtGui.QSpinBox()
+        self.starttimeMM.setValue(0)
+        self.starttimeMM.setMinimum(0)
+        self.starttimeMM.setMaximum(59)
+        self.stoptimeMM = QtGui.QSpinBox()
+        self.stoptimeMM.setValue(0)
+        self.stoptimeMM.setMinimum(0)
+        self.stoptimeMM.setMaximum(59)
+        self.starttimeSS = QtGui.QSpinBox()
+        self.starttimeSS.setValue(0)
+        self.starttimeSS.setMinimum(0)
+        self.starttimeSS.setMaximum(59)
+        self.stoptimeSS = QtGui.QSpinBox()
+        self.stoptimeSS.setValue(0)
+        self.stoptimeSS.setMinimum(0)
+        self.stoptimeSS.setMaximum(59)
 
         self.okbtn = QtGui.QPushButton('Ok')
         nobtn = QtGui.QPushButton('Cancel')
@@ -1762,12 +1815,26 @@ class ArchiverCalendarWidget(QtGui.QDialog):
         self.lbl01 = QtGui.QLabel("Select start-date:")
         self.lbl02 = QtGui.QLabel("Select end-date:")
 
-        layout.addWidget(self.lbl01,0,0,1,1)
-        layout.addWidget(self.lbl02,0,1,1,1)
-        layout.addWidget(self.cal1,1,0,1,1)
-        layout.addWidget(self.cal2,1,1,1,1)
-        layout.addWidget(self.okbtn,3,0,1,1)
-        layout.addWidget(nobtn,3,1,1,1)
+        self.lbl03 = QtGui.QLabel("Select start-time: [HH MM SS]")
+        self.lbl04 = QtGui.QLabel("Select end-time: [HH MM SS]")
+
+        layout.addWidget(self.lbl01,0,0,1,3)
+        layout.addWidget(self.lbl02,0,3,1,3)
+        layout.addWidget(self.cal1,1,0,1,3)
+        layout.addWidget(self.cal2,1,3,1,3)
+        layout.addWidget(self.lbl03,2,0,1,3)
+        layout.addWidget(self.lbl04,2,3,1,3)
+
+        layout.addWidget(self.starttimeHH,3,0,1,1)
+        layout.addWidget(self.starttimeMM,3,1,1,1)
+        layout.addWidget(self.starttimeSS,3,2,1,1)
+
+        layout.addWidget(self.stoptimeHH,3,3,1,1)
+        layout.addWidget(self.stoptimeMM,3,4,1,1)
+        layout.addWidget(self.stoptimeSS,3,5,1,1)
+
+        layout.addWidget(self.okbtn,4,0,1,3)
+        layout.addWidget(nobtn,4,3,1,3)
 
         self.flag0 = 1
         self.flag1 = 1
@@ -1790,6 +1857,8 @@ class ArchiverCalendarWidget(QtGui.QDialog):
     def okclicked(self):
         self.parent.startdate = self.startdate.toPyDate()
         self.parent.enddate = self.enddate.toPyDate()
+        self.parent.starttime = datetime.datetime.strptime(str(str(self.starttimeHH.value())+":"+str(self.starttimeMM.value())+":"+str(self.starttimeSS.value())),'%H:%M:%S').time()
+        self.parent.stoptime = datetime.datetime.strptime(str(str(self.stoptimeHH.value())+":"+str(self.stoptimeMM.value())+":"+str(self.stoptimeSS.value())),'%H:%M:%S').time()
         self.parent.okflag = 1
         self.close()
 
