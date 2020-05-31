@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-<A Dynamic Graphical User Interface package, which gives users a method to construct temporary, permanent and/or a set of GUI:s for users in a simple and fast manner combined with diagnostics tools (with advance 1D and 2D plotting methods).>
-    Copyright (C) <2019>  <Benjamin Edward Bolling>
+<A Dynamic Graphical User Interface package, which gives users a method to construct temporary, permanent and/or a set of GUI:s for users in a simple and fast manner combined with diagnostics tools with advance 1D and 2D plotting methods.>
+    Copyright (C) <2019-2020>  <Benjamin Edward Bolling>  <benjaminbolling@icloud.com>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -22,13 +22,6 @@ try:
     from PyQt5 import QtCore
 except:
     from PyQt4 import QtCore, QtGui
-import os, platform, sys, time, datetime, fnmatch
-import numpy as np
-import numexpr
-import pyqtgraph as pg
-from math import *
-from functools import partial
-import matplotlib.pyplot as plt
 
 class Dialog(QtGui.QWidget):
     def __init__(self, inp, ctrl_library):
@@ -60,16 +53,25 @@ class Dialog(QtGui.QWidget):
                                             'SRAM_RMS'
                                             ]
             elif self.ctrl_library == "EPICS": # Some ESS PV:s
-                self.PV_list = ['LEBT-010:PwrC-PSCH-01:CurR',
-                                'LEBT-010:PwrC-PSCV-01:CurR',
+                self.PV_list = ['LAB:AMC-002-4:I1-YP-TR1-ArrayData',
+                                #'LAB:AMC-002-4:I1-YP-AvgValue',
+                                #'LAB:AMC-002-4:I2-YP-AvgValue',
                                 #'LEBT-010:PwrC-SolPS-01:CurR',
                                 #'LEBT-010:PwrC-SolPS-02:CurR'
                                 ]
-                self.PV_descriptions = ['LEBT_CH-01_Current',
-                                        'LEBT_CV-01_Current',
+                self.PV_descriptions = ['LAB wave 1',
+                                        #'LAB scalar 1',
+                                        #'LAB scalar 2',
                                         #'LEBT_Sol-01_Current',
                                         #'LEBT_Sol-02_Current'
                                         ]
+            elif ctrl_library == "Finance":
+                self.stocknames = ['AAPL',
+                                   'TSLA',
+                                   'FB',
+                                   'BAX',
+                                   'AVGO',
+                                   'UBER']
             elif ctrl_library == "Randomizer":
                 self.devlist = []
                 for m in range(0,35):
@@ -77,6 +79,15 @@ class Dialog(QtGui.QWidget):
                 self.listofbpmattributes = []
                 for m in range(0,8):
                     self.listofbpmattributes.append(str("Random_attribute_"+str(m)))
+            elif ctrl_library == "HistoricalData":
+                self.devlist = ["Define",
+                                "your",
+                                "Devices'",
+                                "Names",
+                                "Here",
+                                "Separated",
+                                "by",
+                                "Rows"]
             self.Nrows = 15
         self.reloadflag = 0
         self.maxsize = 0
@@ -94,12 +105,14 @@ class Dialog(QtGui.QWidget):
             self.listofbpmattributeslistbox.addItems(self.listofbpmattributes)
             self.listofbpmattributeslistbox.currentIndexChanged.connect(self.statuscheck)
             self.toplayout.addWidget(self.listofbpmattributeslistbox)
-        # elif self.ctrl_library == "EPICS": DO NOT add, EPICS uses PV:s and not devices with attributes
-        elif ctrl_library == "Randomizer":
+        elif self.ctrl_library == "Randomizer":
             self.listofbpmattributeslistbox = QtGui.QComboBox(self)
             self.listofbpmattributeslistbox.addItems(self.listofbpmattributes)
             self.listofbpmattributeslistbox.currentIndexChanged.connect(self.statuscheck)
             self.toplayout.addWidget(self.listofbpmattributeslistbox)
+        # elif self.ctrl_library == "EPICS": DO NOT add, EPICS uses PV:s and not devices with attributes
+        # elif self.ctrl_library == "Finance": DO NOT add, makes no sense.
+        # elif self.ctrl_library == "HistoricalData": DO NOT add, makes no sense.
 
         # Construct a horizontal layout box for the edit and get all attribute buttons (must be a sublayer of the toplayout)
         self.editgetallwdg = QtGui.QWidget(self)
@@ -118,10 +131,9 @@ class Dialog(QtGui.QWidget):
         self.getAllAttsBtn.setEnabled(True)
         if self.ctrl_library == "Tango":
             self.horizlayout0.addWidget(self.getAllAttsBtn)
-        # elif self.ctrl_library == "EPICS": DO NOT add, EPICS uses PV:s and not devices with attributes
         elif ctrl_library == "Randomizer":
             self.horizlayout0.addWidget(self.getAllAttsBtn)
-
+        # elif self.ctrl_library == "EPICS" or "Finance" or "HistoricalData": DO NOT add, EPICS uses PV:s and not devices with attributes
 
         # Now we construct the sublayout which will consist of the dynamically constructed buttons of the lists defined above (in example; list1 or list2)
         self.sublayout = QtGui.QGridLayout()
@@ -172,8 +184,13 @@ class Dialog(QtGui.QWidget):
         self.plot2Dbutton = QtGui.QPushButton("2D Plot")
         self.plot2Dbutton.clicked.connect(self.plotin2D)
         self.horizlayout2.addWidget(self.plot2Dbutton)
-
         self.wildcardsbtn = QtGui.QPushButton("Import Devices using WildCards")
+        if self.ctrl_library != "Tango":
+            self.wildcardsbtn.setEnabled(False)
+            self.wildcardsbtn.setToolTip("Currently available for: Tango")
+        elif self.ctrl_library == "Finance":
+            self.plot2Dbutton.setEnabled(False)
+            self.plot2Dbutton.setToolTip("Will be available in a future release.")
         self.wildcardsbtn.clicked.connect(self.wildcardsImportClicked)
         self.horizlayout2.addWidget(self.wildcardsbtn)
 
@@ -181,6 +198,7 @@ class Dialog(QtGui.QWidget):
         self.getallDevs()
 
     def savebtnclicked(self):
+        # To save the configuration
         yesorno, nameoffile = QtGui.QFileDialog.getSaveFileName(self, 'Save to File')
         if not nameoffile:
             self.bottomlabel.setText("Cancelled save configuration.")
@@ -190,6 +208,10 @@ class Dialog(QtGui.QWidget):
                 self.toSave = str('IamaDynaGUIfile' + '\n' + "##IamYourSeparator##\n" + '\n'.join(self.devlist) + '\n' + "##IamYourSeparator##\n" + '\n'.join(self.listofbpmattributes) + '\n' + "##IamYourSeparator##\n" + str(self.Nrows))
             elif self.ctrl_library == "EPICS":
                 self.toSave = str('IamaDynaGUIfile' + '\n' + "##IamYourSeparator##\n" + '\n'.join(self.PV_list) + '\n' + "##IamYourSeparator##\n" + '\n'.join(self.PV_descriptions) + '\n' + "##IamYourSeparator##\n" + str(self.Nrows))
+            elif self.ctrl_library == "Finance":
+                self.toSave = str('IamaDynaGUIfile' + '\n' + "##IamYourSeparator##\n" + '\n'.join(self.stocknames) + '\n' + "##IamYourSeparator##\n" + str(self.Nrows))
+            elif self.ctrl_library == "HistoricalData":
+                self.toSave = str('IamaDynaGUIfile' + '\n' + "##IamYourSeparator##\n" + '\n'.join(self.devlist) + '\n' + "##IamYourSeparator##\n" + str(self.Nrows))
             elif ctrl_library == "Randomizer":
                 self.toSave = str('IamaDynaGUIfile' + '\n' + "##IamYourSeparator##\n" + '\n'.join(self.devlist) + '\n' + "##IamYourSeparator##\n" + '\n'.join(self.listofbpmattributes) + '\n' + "##IamYourSeparator##\n" + str(self.Nrows))
             file.write(self.toSave)
@@ -198,6 +220,7 @@ class Dialog(QtGui.QWidget):
             self.bottomlabel.setToolTip("Saved configuation to file: "+nameoffile)
 
     def loadbtnclicked(self):
+        # File loading initialization
         nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File')
         if not nameoffile:
             self.bottomlabel.setText("Cancelled loading configuration.")
@@ -205,56 +228,62 @@ class Dialog(QtGui.QWidget):
             self.loadfile(nameoffile,0)
 
     def loadfile(self,nameoffile,inp2):
-            file = open(nameoffile, 'r')
-            splitToLoad = file.read()
-            splitToLoad = splitToLoad.split("##IamYourSeparator##")
-            identifier = splitToLoad[0].split('\n')
-            while("" in identifier): # Get rid of empty strings
-                identifier.remove("")
-            if identifier[0] == 'IamaDynaGUIfile':
-                try:
-                    devlist = splitToLoad[1].split("\n")
-                    while("" in devlist): # Get rid of empty strings
-                        devlist.remove("")
-                    listofbpmattributes = splitToLoad[2].split("\n")
-                    while("" in listofbpmattributes): # Get rid of empty strings
-                        listofbpmattributes.remove("")
-                    Nrows = splitToLoad[3].split("\n")[1]
-                    if self.ctrl_library == "Tango":
-                        self.devlist = devlist
-                        self.listofbpmattributes = listofbpmattributes
-                    elif ctrl_library == "Randomizer":
-                        self.devlist = devlist
-                        self.listofbpmattributes = listofbpmattributes
-                    elif self.ctrl_library == "EPICS":
-                        self.PV_list = devlist
-                        self.PV_descriptions = listofbpmattributes
-                    self.Nrows = float(Nrows)
-                    # Destroy the current buttons.
-                    if inp2 == 0:
-                        self.listofbpmattributeslistbox.clear()
-                        self.listofbpmattributeslistbox.addItems(self.listofbpmattributes)
-                        self.bottomlabel.setText("Loaded configuration.")
-                        self.killdynamicbuttongroup()
-                        self.resize(10,10)
-                        # All buttons are gone, so lets construct the new buttons.
-                        self.getallDevs()
-                        # The layout should be minimal, so make it unrealistically small (x=10, y=10 [px]) and then resize to minimum.
-                        self.setMaximumSize(10,10)
-                        #self.resize(self.sizeHint().width(), self.sizeHint().height())
-                        self.bottomlabel.setToolTip("Loaded configuration from file: "+nameoffile)
-                except:
-                    if inp2 == 0:
-                        self.bottomlabel.setText("Conf. file error: Missing separator(s).")
-            else:
+        # The actual loading of the file
+        file = open(nameoffile, 'r')
+        splitToLoad = file.read()
+        splitToLoad = splitToLoad.split("##IamYourSeparator##")
+        identifier = splitToLoad[0].split('\n')
+        while("" in identifier): # Get rid of empty strings
+            identifier.remove("")
+        if identifier[0] == 'IamaDynaGUIfile':
+            try:
+                devlist = splitToLoad[1].split("\n")
+                while("" in devlist): # Get rid of empty strings
+                    devlist.remove("")
+                listofbpmattributes = splitToLoad[2].split("\n")
+                while("" in listofbpmattributes): # Get rid of empty strings
+                    listofbpmattributes.remove("")
+                Nrows = splitToLoad[3].split("\n")[1]
+                if self.ctrl_library == "Tango":
+                    self.devlist = devlist
+                    self.listofbpmattributes = listofbpmattributes
+                elif ctrl_library == "Randomizer":
+                    self.devlist = devlist
+                    self.listofbpmattributes = listofbpmattributes
+                elif self.ctrl_library == "EPICS":
+                    self.PV_list = devlist
+                    self.PV_descriptions = listofbpmattributes
+                elif self.ctrl_library == "Finance":
+                    self.stocknames = devlist
+                elif self.ctrl_library == "HistoricalData":
+                    self.stocknames = devlist
+                self.Nrows = float(Nrows)
+                # Destroy the current buttons / configuration
                 if inp2 == 0:
-                    self.bottomlabel.setText("Not a DynaGUI file - missing identifier.")
-
+                    self.listofbpmattributeslistbox.clear()
+                    self.listofbpmattributeslistbox.addItems(self.listofbpmattributes)
+                    self.bottomlabel.setText("Loaded configuration.")
+                    self.killdynamicbuttongroup()
+                    self.resize(10,10)
+                    # All buttons are gone, so lets construct the new buttons.
+                    self.getallDevs()
+                    # The layout should be minimal, so make it unrealistically small (x=10, y=10 [px]) and then resize to minimum.
+                    self.setMaximumSize(10,10)
+                    #self.resize(self.sizeHint().width(), self.sizeHint().height())
+                    self.bottomlabel.setToolTip("Loaded configuration from file: "+nameoffile)
+            except:
+                if inp2 == 0:
+                    self.bottomlabel.setText("Conf. file error: Missing separator(s).")
+        else:
+            if inp2 == 0:
+                self.bottomlabel.setText("Not a DynaGUI file - missing identifier.")
 
     def killdynamicbuttongroup(self):
-        # Destroy / kill all buttons currently constructed in the buttongroup.
+        # Destroy all buttons currently constructed in the buttongroup.
         if self.ctrl_library == "EPICS":
             self.bottomlabel.setText(str("Loading defined PV statuses..."))
+        elif self.ctrl_library == "Finance":
+            self.bottomlabel.setText("Loading stocks...")
         else:
             self.bottomlabel.setText(str("Loading " + str(self.listofbpmattributeslistbox.currentText()) + " statuses..."))
         for i in reversed(range(self.sublayout.count())):
@@ -276,10 +305,14 @@ class Dialog(QtGui.QWidget):
         # Here the construction begins for all the pushbuttons, and we make them all belong to the groupbox.
         if self.ctrl_library == "Tango":
             alldevs = self.devlist
-        elif ctrl_library == "Randomizer":
+        elif self.ctrl_library == "Randomizer":
             alldevs = self.devlist
         elif self.ctrl_library == "EPICS":
             alldevs = self.PV_list
+        elif self.ctrl_library == "Finance":
+            alldevs = self.stocknames
+        elif self.ctrl_library == "HistoricalData":
+            alldevs = self.devlist
 
         for n,index in enumerate(alldevs):
             rowcount += 1
@@ -287,9 +320,13 @@ class Dialog(QtGui.QWidget):
                 button = QtGui.QPushButton(str(self.devlist[n]), self.groupBox)
             elif ctrl_library == "Randomizer":
                 button = QtGui.QPushButton(str(self.devlist[n]), self.groupBox)
-            if self.ctrl_library == "EPICS":
+            elif self.ctrl_library == "EPICS":
                 button = QtGui.QPushButton(str(self.PV_descriptions[n]), self.groupBox)
                 button.setToolTip(index)
+            elif self.ctrl_library == "Finance":
+                button = QtGui.QPushButton(str(self.stocknames[n]), self.groupBox)
+            elif self.ctrl_library == "HistoricalData":
+                button = QtGui.QPushButton(str(self.devlist[n]), self.groupBox)
             textbox = QtGui.QLineEdit("-", self.groupBox)
             textbox.setEnabled(False)
             self.sublayout.addWidget(button,rowcount,colcount,1,1)
@@ -312,6 +349,7 @@ class Dialog(QtGui.QWidget):
         self.statuscheck()
 
     def statuscheck(self):
+        # Get status of all devices in the list ; depends on controlsystem
         self.maxsize = 0
         TaurusList = []
         for bval,item in enumerate(self.buttonGroup.buttons()):
@@ -357,6 +395,22 @@ class Dialog(QtGui.QWidget):
                 elif self.ctrl_library == "EPICS":
                     PV = epics.PV(proxy, auto_monitor=True)
                     state = PV.status # Connected => 1
+                    if state == 0:
+                        try:
+                            val = PV.value
+                            try:
+                                if val != 0:
+                                    state = 1
+                            except:
+                                None
+                            if state == 0:
+                                try:
+                                    if len(val) > 1:
+                                        state = 1
+                                except:
+                                    None
+                        except:
+                            None
                     if state == 1:
                         if platform.system() == "Linux":
                             item.setStyleSheet('background-color: lime')
@@ -391,8 +445,64 @@ class Dialog(QtGui.QWidget):
                             lval += 1
                             if lval == bval:
                                 lineedit.setText("-")
+                elif self.ctrl_library == "Finance":
+                    try:
+                        try:
+                            val = float(pdr.get_quote_yahoo(proxy)['price'].values.tolist()[0])
+                        except:
+                            val = float(pdr.get_quote_yahoo(proxy)['preMarketPrice'].values.tolist()[0])
+                        state = 1
+                        TaurusList.append(str(proxy))
+                    except:
+                        print("failed to retreive data for "+proxy)
+                        state = 0
+                    if state == 1:
+                        if platform.system() == "Linux":
+                            item.setStyleSheet('background-color: lime')
+                        elif platform.system() == "Darwin":
+                            item.setStyleSheet('background-color: green')
+                        else:
+                            item.setStyleSheet('background-color: lime')
+                        lineedits = self.groupBox.findChildren(QtGui.QLineEdit)
+                        lineedits[bval].setText(str(val))
+                        font = lineedits[bval].font()
+                        try:
+                            ffont = QtGui2.QFont(font)
+                            thissize = QtGui2.QFontMetrics(ffont).boundingRect(lineedits[bval].text()).width()
+                        except:
+                            ffont = QtGui.QFont(font)
+                            thissize = QtGui.QFontMetrics(ffont).boundingRect(lineedits[bval].text()).width()
+                        if thissize > self.maxsize:
+                            self.maxsize = thissize
+                    else:
+                        item.setStyleSheet('QPushButton {background-color: maroon; color: white}')
+                        lval = -1
+                        for lineedit in self.groupBox.findChildren(QtGui.QLineEdit):
+                            lval += 1
+                            if lval == bval:
+                                lineedit.setText("-")
                 elif self.ctrl_library == "Randomizer":
                     val = random.random()
+                    if platform.system() == "Linux":
+                        item.setStyleSheet('background-color: lime')
+                    elif platform.system() == "Darwin":
+                        item.setStyleSheet('background-color: green')
+                    else:
+                        item.setStyleSheet('background-color: lime')
+                    lineedits = self.groupBox.findChildren(QtGui.QLineEdit)
+                    lineedits[bval].setText(str(val))
+                    font = lineedits[bval].font()
+                    try:
+                        ffont = QtGui2.QFont(font)
+                        thissize = QtGui2.QFontMetrics(ffont).boundingRect(lineedits[bval].text()).width()
+                    except:
+                        ffont = QtGui.QFont(font)
+                        thissize = QtGui.QFontMetrics(ffont).boundingRect(lineedits[bval].text()).width()
+                    if thissize > self.maxsize:
+                        self.maxsize = thissize
+                    TaurusList.append(str(proxy))
+                elif self.ctrl_library == "HistoricalData":
+                    val = 0.
                     if platform.system() == "Linux":
                         item.setStyleSheet('background-color: lime')
                     elif platform.system() == "Darwin":
@@ -419,7 +529,6 @@ class Dialog(QtGui.QWidget):
                 item.setStyleSheet('QPushButton {background-color: maroon; color: white}')
             print("Loading: "+str("{0:.2f}".format(100*(bval+1)/len(self.buttonGroup.buttons())))+"%")
         self.TaurusList = TaurusList
-
         for lineedit in self.groupBox.findChildren(QtGui.QLineEdit):
             try:
                 lineedit.setFixedWidth(self.maxsize+25)
@@ -427,26 +536,27 @@ class Dialog(QtGui.QWidget):
                 lineedit.setFixedWidth(50)
         if self.ctrl_library == "Tango":
             self.bottomlabel.setText(str(str(self.listofbpmattributeslistbox.currentText()) + " statuses loaded."))
-        elif ctrl_library == "Randomizer":
+        elif self.ctrl_library == "Randomizer":
             self.bottomlabel.setText(str(str(self.listofbpmattributeslistbox.currentText()) + " statuses loaded."))
+        if self.ctrl_library == "HistoricalData":
+            self.bottomlabel.setText(str("Select 1D or 2D plotting for the historical datafile."))
         elif self.ctrl_library == "EPICS":
             self.bottomlabel.setText(str("PV statuses loaded."))
         self.setMaximumSize(10,10)
         self.resize(self.sizeHint().width(), self.sizeHint().height())
 
-
     def getAllAttsClicked(self):
         dev_ids = []
         valid_devs = []
         valid_attr_names = []
-
         if self.ctrl_library == "Tango":
             alldevs = self.devlist
-        elif ctrl_library == "Randomizer":
+        elif self.ctrl_library == "Randomizer":
+            alldevs = self.devlist
+        elif self.ctrl_library == "HistoricalData":
             alldevs = self.devlist
         elif self.ctrl_library == "EPICS":
             alldevs = self.PV_list
-
         for dev in alldevs:
             dev_id = dev.split("/")
             dev_id = dev_id[len(dev_id)-1]
@@ -461,13 +571,12 @@ class Dialog(QtGui.QWidget):
                         for att in atts:
                             if att.name not in [str(x) for x in valid_attr_names]:
                                 valid_attr_names.append(att.name)
-                elif self.ctrl_library == "Randomizer":
+                elif self.ctrl_library == "Randomizer" or self.ctrl_library == "HistoricalData":
                     valid_attr_names = []
                     for n in range(5):
                         valid_attr_names.append("Random attribute "+str(n))
             except:
                 None
-
         self.listofbpmattributes = valid_attr_names
         self.listofbpmattributeslistbox.clear()
         self.listofbpmattributeslistbox.addItems(self.listofbpmattributes)
@@ -494,9 +603,14 @@ class Dialog(QtGui.QWidget):
                     val = bd.read_attribute(str(self.listofbpmattributeslistbox.currentText())).value
             elif self.ctrl_library == "Randomizer":
                 val = random.random()
+            elif self.ctrl_library == "HistoricalData":
+                val = 0.
+            elif self.ctrl_library == "EPICS":
+                val = epics.PV(devs, auto_monitor=True).value
             if hasattr(val, "__len__"):
                 scalars.append(1)
             else:
+                print("scalar")
                 scalars.append(0)
         if sum(scalars) == 0:
             self.scalarflag = 1 # it is a scalar
@@ -505,6 +619,8 @@ class Dialog(QtGui.QWidget):
         if len(TaurusList) < 1:
             if self.ctrl_library == "EPICS":
                 self.bottomlabel.setText("No active defined PVs found.")
+            elif self.ctrl_library == "Finance":
+                self.bottomlabel.setText("No stocks with defined names could be imported.")
             else:
                 self.bottomlabel.setText("No devices found with attribute "+attr+".")
         elif self.scalarflag == 0:
@@ -526,9 +642,8 @@ class Dialog(QtGui.QWidget):
             attr = str(self.listofbpmattributeslistbox.currentText())
         elif self.ctrl_library ==  "Randomizer":
             attr = str(self.listofbpmattributeslistbox.currentText())
-        scalars =[]
         for devs in self.TaurusList:
-            if self.ctrl_library == "EPICS":
+            if self.ctrl_library == "EPICS" or self.ctrl_library == "Finance":
                 TaurusList.append(str(devs))
             else:
                 TaurusList.append(str(devs)+"/"+attr)
@@ -537,28 +652,15 @@ class Dialog(QtGui.QWidget):
                 prox = [PT.DeviceProxy(str(devs))]
                 for bd in prox:
                     val = bd.read_attribute(str(self.listofbpmattributeslistbox.currentText())).value
-                    if hasattr(val, "__len__"):
-                        scalars.append(1)
-                    else:
-                        scalars.append(0)
             elif self.ctrl_library ==  "Randomizer":
                 val = random.random()
-                if hasattr(val, "__len__"):
-                    scalars.append(1)
-                else:
-                    scalars.append(0)
             elif self.ctrl_library == "EPICS":
-                count = PV.count
-                lineedits = self.groupBox.findChildren(QtGui.QLineEdit)
-                if isinstance(count, int):
-                    if count == 1:
-                        scalars.append(0)
-                    if count > 1:
-                        scalars.append(1)
-        if sum(scalars) == 0:
-            self.scalarflag = 1 # it is a scalar
-        else:
-            self.scalarflag = 0 # it is a vector
+                val = epics.PV(devs, auto_monitor=True).value
+            elif ctrl_library == "Finance":
+                try:
+                    val = float(pdr.get_quote_yahoo(devs)['price'].values.tolist()[0])
+                except:
+                    val = float(pdr.get_quote_yahoo(devs)['preMarketPrice'].values.tolist()[0])
         if len(TaurusList) < 1:
             failflag = 1
             if self.ctrl_library == "EPICS":
@@ -638,6 +740,9 @@ class Dialog(QtGui.QWidget):
         elif self.ctrl_library == "Randomizer":
             self.listofbpmattributeslistbox.clear()
             self.listofbpmattributeslistbox.addItems(self.listofbpmattributes)
+        elif self.ctrl_library == "Finance":
+            self.listofbpmattributeslistbox.clear()
+            self.listofbpmattributeslistbox.addItems(self.listofbpmattributes)
 
         if self.reloadflag == 1:
             devlist = []
@@ -662,10 +767,16 @@ class Dialog(QtGui.QWidget):
             self.resizeDynaGUI()
             self.reloadflag = 0
 
-            # The layout should be minimal, so make it unrealistically small (x=10, y=10 [px]) and then resize to minimum.
     def resizeDynaGUI(self):
             self.setMaximumSize(10,10)
             self.resize(self.sizeHint().width(), self.sizeHint().height())
+
+    def get_all_functions_from_module(module, functions={}):
+        for f in math.__dict__:
+          obj = getattr(math, f)
+          if callable(obj):
+           functions[f] = obj
+        return functions
 
     def closeEvent(self, event):
         reply = QtGui.QMessageBox.question(self, 'Exit', 'Are you sure you want to exit? All unsaved data will be lost.', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
@@ -673,7 +784,7 @@ class Dialog(QtGui.QWidget):
             event.accept()
             self.close()
         else:
-            event.ignore()
+            event.ignore() # Works for all
 
 class listbtnGUI(QtGui.QDialog):
     def __init__(self, parent = Dialog):
@@ -688,6 +799,11 @@ class listbtnGUI(QtGui.QDialog):
             attrlbl = QtGui.QLabel("List of device attributes:")
             self.textboxAttr = QtGui.QPlainTextEdit('\n'.join(parent.listofbpmattributes))
         elif self.parent.ctrl_library == "Randomizer":
+            devslbl = QtGui.QLabel("List of devices:")
+            self.textboxDevs = QtGui.QPlainTextEdit('\n'.join(parent.devlist))
+            attrlbl = QtGui.QLabel("List of device attributes:")
+            self.textboxAttr = QtGui.QPlainTextEdit('\n'.join(parent.listofbpmattributes))
+        elif self.parent.ctrl_library == "Finance":
             devslbl = QtGui.QLabel("List of devices:")
             self.textboxDevs = QtGui.QPlainTextEdit('\n'.join(parent.devlist))
             attrlbl = QtGui.QLabel("List of device attributes:")
@@ -760,7 +876,7 @@ class listbtnGUI(QtGui.QDialog):
         self.close()
 
     def cancelfunc(self):
-        self.close()
+        self.close() # Works for all
 
 class wildcardsGUI(QtGui.QDialog):
     def __init__(self, parent = Dialog):
@@ -835,12 +951,12 @@ class wildcardsGUI(QtGui.QDialog):
             self.close()
 
     def cancelfunc(self):
-        self.close()
+        self.close() # Works for Tango
 
-class Surfogram(QtGui.QDialog): # Maybe do 3D plotting in future?
+class Surfogram(QtGui.QDialog):
     def __init__(self, parent = Dialog):
         super(Surfogram, self).__init__(parent)
-        pg.opengl.GLSurfacePlotItem
+        pg.opengl.GLSurfacePlotItem # Future contour (3D) plotting
 
 class prep1DGUI(QtGui.QDialog):
     def __init__(self, parent = Dialog):
@@ -853,9 +969,16 @@ class prep1DGUI(QtGui.QDialog):
         self.textboxF = QtGui.QDoubleSpinBox()
         self.textboxF.setValue(parent.toSpecupdateFrequency)
 
+        if parent.ctrl_library == "Finance":
+            self.textboxF.setMaximum(1)
+
+
         minulbl = QtGui.QLabel("# of minutes to show the plotting: [min]")
         self.textboxM = QtGui.QDoubleSpinBox()
         self.textboxM.setValue(parent.toSpecminutes)
+
+        self.textboxF.setMinimum(0.01)
+        self.textboxM.setMinimum(0.1)
 
         okbtn = QtGui.QPushButton('Ok')
         nobtn = QtGui.QPushButton('Cancel')
@@ -873,7 +996,7 @@ class prep1DGUI(QtGui.QDialog):
 
     def cancelfunc(self):
         self.parent.okflag = 0
-        self.close()
+        self.close() # Works for all
 
 class prep2DGUI(QtGui.QDialog):
     def __init__(self, parent = Dialog):
@@ -907,7 +1030,7 @@ class prep2DGUI(QtGui.QDialog):
 
     def cancelfunc(self):
         self.parent.okflag = 0
-        self.close()
+        self.close() # Works for all
 
 class Spectrogram(QtGui.QDialog):
     def __init__(self, parent = Dialog):
@@ -1015,7 +1138,7 @@ class Spectrogram(QtGui.QDialog):
         self.img.setLookupTable(lut)
         self.t = QtCore.QTimer()
         self.t.timeout.connect(self.update)
-        self.t.start(1000/self.updateFrequency)
+        self.t.start(int(1000/self.updateFrequency))
 
     def editcm(self):
         items = ("CM1","CM2","CM3")
@@ -1055,7 +1178,7 @@ class Spectrogram(QtGui.QDialog):
             self.plotvsstoredbtn.setText('Plotting vs stored')
 
     def updateRefImage(self):
-        self.refarr = self.plotarr[self.tSize-1,:]
+        self.refarr = self.plotarr[int(self.tSize-1),:]
 
     def plotTrace(self): # From JonPet
         fig = plt.figure()
@@ -1063,10 +1186,10 @@ class Spectrogram(QtGui.QDialog):
         if i == self.tSize:
             i = self.tSize - 1
         if str(self.plotvsstoredbtn.text()) == 'Plotting vs stored':
-            arr = (self.plotarr[i,:]) - self.refarr
+            arr = (self.plotarr[int(i),:]) - self.refarr
             yaxis = " (real - stored values)"
         elif str(self.plotvsstoredbtn.text()) == 'Plotting real values':
-            arr = (self.plotarr[i,:])
+            arr = (self.plotarr[int(i),:])
             yaxis = " (real values)"
         plt.plot(arr, picker=5)
         plt.xlabel('Device index')
@@ -1078,13 +1201,15 @@ class Spectrogram(QtGui.QDialog):
         thisline = event.artist
         xdata = thisline.get_xdata()
         ydata = thisline.get_ydata()
-
         ind = event.ind
         if len(ind) > 1:
             ind = ind[np.argmax(abs(ydata[ind]))]
         if self.parent.specflag == 0:
-            sensname = self.sensorNames[ind].split('/')
-            sensname = '  '.join([sensname[0], sensname[2]])
+            sensname = self.sensorNames[ind[0]].split('/')
+            if len(sensname) > 2:
+                sensname = '  '.join([sensname[0], sensname[2]])
+            elif len(sensname) > 1:
+                sensname = '  '.join([sensname[1], sensname[0]])
         else:
             sensname = self.sensorNames[ind]
         plt.text(xdata[ind], ydata[ind], sensname, rotation =45, rotation_mode = 'anchor')
@@ -1118,6 +1243,8 @@ class Spectrogram(QtGui.QDialog):
                     val = bd.read_attribute(attr).value
             elif self.ctrl_library == "Randomizer":
                 val = random.random()
+            elif self.ctrl_library == "EPICS":
+                val = epics.PV(inp, auto_monitor=True).value
             y.append(str(val))
         self.plotarr[-1:] = y
         if str(self.plotvsstoredbtn.text()) == 'Plotting vs stored':
@@ -1131,7 +1258,7 @@ class Spectrogram(QtGui.QDialog):
 
     def closeEvent(self, event):
         self.t.stop()
-        self.close()
+        self.close() # Must add waveform support
 
 class PyQtGraphPlotter(QtGui.QMainWindow):
     def __init__(self, parent = Dialog):
@@ -1139,11 +1266,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
         self.ctrl_library = parent.ctrl_library
         self.parent = parent
         self.central_widget = QtGui.QStackedWidget()
-        mathfunctionstxt  = ['abs','acos','asin','atan','atan2','ceil','cos','cosh','degrees','e','exp','fabs','floor','fmod','frexp','hypot','ldexp','log','log10','modf','pi','pow','radians','sin','sinh','sqrt','tan','tanh']
-        mathfunctionsreal = [abs,acos,asin,atan,atan2,ceil,cos,cosh,degrees,e,exp,fabs,floor,fmod,frexp,hypot,ldexp,log,log10,modf,pi,pow,radians,sin,sinh,sqrt,tan,tanh]
-        self.mathdict = dict([])
-        for n in range(len(mathfunctionstxt)):
-            self.mathdict[mathfunctionstxt[n]] = mathfunctionsreal[n]
+
         self.setCentralWidget(self.central_widget)
         self.contWidget = PyQtGraphContainerWidget(self)
         if self.parent.archivingonly == 0:
@@ -1154,103 +1277,52 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             self.archivemode = 1
         self.contWidget.loadbtn.clicked.connect(self.loadclick)
         self.contWidget.savebtn.clicked.connect(self.saveclick)
-        self.contWidget.showhidebtn.clicked.connect(self.PlotSettings)
+        self.contWidget.plotsettingsbtn.clicked.connect(self.PlotSettings)
         self.contWidget.showhidelegends.clicked.connect(self.showhidelegend)
         self.contWidget.resetbtn.clicked.connect(self.reset)
+        self.contWidget.hideshowallbtn.clicked.connect(self.showhideall)
         self.central_widget.addWidget(self.contWidget)
         self.pyqtgraphtimer = QtCore.QTimer()
         self.devslist = []
-        self.scalarflag = parent.scalarflag # 0 : it is a vector attibute and ok to plot. 1: it is a scalar attribute.
-        self.toSpecialList = parent.toSpecTaurusList
+        self.sensorNames = parent.toSpecTaurusList
 
-        if self.scalarflag == 1:
-            for ind, inp in enumerate(parent.toSpecTaurusList):
-                self.attr = inp.split('/')
-                self.attr = str(self.attr[len(self.attr)-1])
-                self.devslist.append(str("/".join(inp.split('/')[:-1])))
-                self.colnames = parent.toSpecDevList
-            self.cols = len(self.devslist)
-        elif self.scalarflag == 0:
-            self.vectorlist = []
-            self.colnames = []
-            for ind, inp in enumerate(parent.toSpecTaurusList):
-                self.attr = inp.split('/')
-                self.attr = str(self.attr[len(self.attr)-1])
-                self.devslist.append(str("/".join(inp.split('/')[:-1])))
-                if self.ctrl_library == "Tango":
-                    prox = [PT.DeviceProxy(str("/".join(inp.split('/')[:-1])))]
-                    for bd in prox:
-                        val = bd.read_attribute(self.attr).value
-                elif self.ctrl_library == "Randomizer":
-                    val = random.random()
-                elif self.ctrl_library == "EPICS":
-                    PV = epics.PV(str(inp), auto_monitor=True)
-                    val = PV.value
-                for n in range(len(val)):
-                    self.vectorlist.append('Vector N'+str(n))
-                    denm = str(self.devslist[ind]).split('/')
-                    denm = str(denm[len(denm)-1])
-                    self.colnames.append(denm+", "+self.vectorlist[n])
-            self.cols = len(self.colnames)
-        self.graphTime = parent.toSpecminutes
-        self.updateFreq = parent.toSpecupdateFrequency
-        self.contWidget.plot.setXRange(-60 * 1.01 * self.graphTime,0)
+        for ind, inp in enumerate(parent.toSpecTaurusList):
+            self.attr = inp.split('/')
+            self.attr = str(self.attr[len(self.attr)-1])
+            self.devslist.append(str("/".join(inp.split('/')[:-1])))
+            self.data_y0desc = parent.toSpecDevList
+        self.cols = len(self.devslist)
+
+        self.minutes = parent.toSpecminutes
+        self.updateFrequency = parent.toSpecupdateFrequency
+
+        self.contWidget.plot.setXRange(-60 * 1.01 * self.minutes,0)
         if self.ctrl_library == "Tango":
             self.setWindowTitle(self.attr)
         elif self.ctrl_library == "Randomizer":
-            self.setWindowTitle(self.attr)
+            self.setWindowTitle("Random Values Plotted")
         elif self.ctrl_library == "EPICS":
             self.setWindowTitle("Process Variables")
-        self.colorlist = ['b', 'g', 'r', 'c', 'm', 'y', 'w']
         self.devsPlotting = []
-        colorlist=[[255,255,255],[255,0,0],[0,255,0],[0,0,255],[255,255,0],[255,0,255],[0,255,255],[128,0,0],[139,0,0],[165,42,42],[178,34,34],[220,20,60],[255,99,71],[255,127,80],[205,92,92],[240,128,128],[233,150,122],[250,128,114],[255,160,122],[255,69,0],[255,140,0],[255,165,0],[255,215,0],[184,134,11],[218,165,32],[238,232,170],[189,183,107],[240,230,140],[128,128,0],[154,205,50],[85,107,47],[107,142,35],[124,252,0],[127,255,0],[173,255,47],[0,100,0],[0,128,0],[34,139,34],[50,205,50],[144,238,144],[152,251,152],[143,188,143],[0,250,154],[0,255,127],[46,139,87],[102,205,170],[60,179,113],[32,178,170],[47,79,79],[0,128,128],[0,139,139],[224,255,255],[0,206,209],[64,224,208],[72,209,204],[175,238,238],[127,255,212],[176,224,230],[95,158,160],[70,130,180],[100,149,237],[0,191,255],[30,144,255],[173,216,230],[135,206,235],[135,206,250],[25,25,112],[0,0,128],[0,0,139],[0,0,205],[65,105,225],[138,43,226],[75,0,130],[72,61,139],[106,90,205],[123,104,238],[147,112,219],[139,0,139],[148,0,211],[153,50,204],[186,85,211],[128,0,128],[216,191,216],[221,160,221],[238,130,238],[218,112,214],[199,21,133],[219,112,147],[255,20,147],[255,105,180],[255,182,193],[255,192,203],[250,235,215],[245,245,220],[255,228,196],[255,235,205],[245,222,179],[255,248,220],[255,250,205],[250,250,210],[255,255,224],[139,69,19],[160,82,45],[210,105,30],[205,133,63],[244,164,96],[222,184,135],[210,180,140],[188,143,143],[255,228,181],[255,222,173],[255,218,185],[255,228,225],[255,240,245],[250,240,230],[253,245,230],[255,239,213],[255,245,238],[245,255,250],[112,128,144],[119,136,153],[176,196,222],[230,230,250],[255,250,240],[240,248,255],[248,248,255],[240,255,240],[255,255,240],[240,255,255],[105,105,105],[128,128,128],[169,169,169],[192,192,192],[211,211,211],[220,220,220],[245,245,245]]
+        self.colorlist=[[255,255,255],[255,0,0],[0,255,0],[0,0,255],[255,255,0],[255,0,255],[0,255,255],[128,0,0],[139,0,0],[165,42,42],[178,34,34],[220,20,60],[255,99,71],[255,127,80],[205,92,92],[240,128,128],[233,150,122],[250,128,114],[255,160,122],[255,69,0],[255,140,0],[255,165,0],[255,215,0],[184,134,11],[218,165,32],[238,232,170],[189,183,107],[240,230,140],[128,128,0],[154,205,50],[85,107,47],[107,142,35],[124,252,0],[127,255,0],[173,255,47],[0,100,0],[0,128,0],[34,139,34],[50,205,50],[144,238,144],[152,251,152],[143,188,143],[0,250,154],[0,255,127],[46,139,87],[102,205,170],[60,179,113],[32,178,170],[47,79,79],[0,128,128],[0,139,139],[224,255,255],[0,206,209],[64,224,208],[72,209,204],[175,238,238],[127,255,212],[176,224,230],[95,158,160],[70,130,180],[100,149,237],[0,191,255],[30,144,255],[173,216,230],[135,206,235],[135,206,250],[25,25,112],[0,0,128],[0,0,139],[0,0,205],[65,105,225],[138,43,226],[75,0,130],[72,61,139],[106,90,205],[123,104,238],[147,112,219],[139,0,139],[148,0,211],[153,50,204],[186,85,211],[128,0,128],[216,191,216],[221,160,221],[238,130,238],[218,112,214],[199,21,133],[219,112,147],[255,20,147],[255,105,180],[255,182,193],[255,192,203],[250,235,215],[245,245,220],[255,228,196],[255,235,205],[245,222,179],[255,248,220],[255,250,205],[250,250,210],[255,255,224],[139,69,19],[160,82,45],[210,105,30],[205,133,63],[244,164,96],[222,184,135],[210,180,140],[188,143,143],[255,228,181],[255,222,173],[255,218,185],[255,228,225],[255,240,245],[250,240,230],[253,245,230],[255,239,213],[255,245,238],[245,255,250],[112,128,144],[119,136,153],[176,196,222],[230,230,250],[255,250,240],[240,248,255],[248,248,255],[240,255,240],[255,255,240],[240,255,255],[105,105,105],[128,128,128],[169,169,169],[192,192,192],[211,211,211],[220,220,220],[245,245,245]]
         self.colorind = []
-        self.coldelays = []
-        for n in range(self.cols):
-            m = n
-            while m > len(colorlist)-1:
-                m = m - len(colorlist)
-            self.colorind.append(colorlist[m])
+        self.delays_y0 = []
+        self.delays_y = []
         self.ch_sublayout = QtGui.QGridLayout(self.contWidget.chGroupBox)
-
-        rowcount = -1
-        colcount = 0
-        maxrows = 20
+        for n in range(self.cols):
+            self.delays_y0.append(0)
+            m = n
+            while m > len(self.colorlist)-1:
+                m = m - len(self.colorlist)
+            self.colorind.append(self.colorlist[m])
         self.listInit()
-        maxwidth = 0
-        for ind,dev in enumerate(self.colnames):
-            self.coldelays.append(0)
-            rowcount += 1
-            chBox = QtGui.QCheckBox(str(dev))
-            btn = QtGui.QPushButton()
-            colorscheme = self.colorind[ind]
-            col0 = str(colorscheme[0])
-            col1 = str(colorscheme[1])
-            col2 = str(colorscheme[2])
-            btn.setStyleSheet("background-color:rgb("+col0+","+col1+","+col2+","+")");
-            btn.setFixedWidth(20)
-            chBox.setChecked(self.devsPlotting[ind])
-            chBox.stateChanged.connect(self.chBoxCheck)
-            btn.clicked.connect(partial(self.colorbtnRGBchange,str(ind)))
-            try:
-                fm = QtGui2.QFontMetrics(chBox.font())
-            except:
-                fm = QtGui.QFontMetrics(chBox.font())
-            chBoxWidth = fm.width(chBox.text())
-            chBox.setFixedWidth(chBoxWidth*1.5)
-            if chBoxWidth > maxwidth:
-                maxwidth = chBoxWidth
-            self.ch_sublayout.addWidget(chBox,rowcount,colcount+1,1,1)
-            self.ch_sublayout.addWidget(btn,rowcount,colcount,1,1)
-            if rowcount == maxrows-1:
-                rowcount = -1
-                colcount += 2
+        self.constructLegendItem()
 
         self.scrollarea = QtGui.QScrollArea(self)
         self.scrollarea.setWidgetResizable(True)
-        self.scrollarea.setMinimumWidth(maxwidth*1.5+50)
+        self.scrollarea.setMinimumWidth(int(self.maxwidth*1.5+50))
         self.scrollarea.setWidget(self.contWidget.chGroupBox)
-        self.contWidget.layout.addWidget(self.scrollarea,0,6,3,1)
+        self.contWidget.layout.addWidget(self.scrollarea,0,7,3,1)
         self.contWidget.setLayout(self.contWidget.layout)
 
         self.pyqtgraphtimer.timeout.connect(self.updater)
@@ -1260,12 +1332,24 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             self.ylabel = self.attr
         elif self.ctrl_library == "EPICS":
             self.ylabel = "PV value(s)"
+        elif self.ctrl_library == "Finance":
+            self.ylabel = "USD"
 
         self.contWidget.plot.setLabel('left',self.ylabel,color='white',size = 30)
         self.scrollarea.setVisible(False)
 
         if self.archivemode == 1:
             self.loadclick()
+
+    def showhideall(self):
+        if self.contWidget.hideshowallbtn.text() == "Hide All":
+            self.contWidget.hideshowallbtn.setText("Show All")
+            for chBox in self.contWidget.chGroupBox.findChildren(QtGui.QCheckBox):
+                chBox.setChecked(False)
+        elif self.contWidget.hideshowallbtn.text() == "Show All":
+            self.contWidget.hideshowallbtn.setText("Hide All")
+            for chBox in self.contWidget.chGroupBox.findChildren(QtGui.QCheckBox):
+                chBox.setChecked(True)
 
     def showhidelegend(self):
         if self.contWidget.showhidelegends.text() == "Hide legend":
@@ -1297,26 +1381,37 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                             col0 = str(cm[0])
                             col1 = str(cm[1])
                             col2 = str(cm[2])
-                            btn.setStyleSheet("background-color:rgb("+col0+","+col1+","+col2+","+")");
+                            btn.setStyleSheet("background-color:rgb("+col0+","+col1+","+col2+")");
                     self.chBoxCheck()
             else:
                 QtGui.QMessageBox.information(self,"Error",'Incorrect N of inputs')
 
     def chBoxCheck(self):
         devsPlotting = []
+        devs_original = len(self.data_x0)
+
+        print(len(self.data_y0))
+        print(len(self.data_y))
+
         for ind,chBox in enumerate(self.contWidget.chGroupBox.findChildren(QtGui.QCheckBox)):
             if chBox.isChecked() == 1:
                 devsPlotting.append(1)
                 timestamps = []
-                for timestamp in self.data_x[ind]:
+                if ind < devs_original:
+                    for timestamp in self.data_x0[ind]:
+                        if self.archivemode == 0:
+                            timestamps.append(timestamp - time.time() + self.delays_y0[ind])
+                        elif self.archivemode == 1:
+                            if ind < len(self.sensorNames):
+                                timestamps.append(timestamp + self.delays_y0[ind])
+                            else:
+                                timestamps.append(timestamp)
                     if self.archivemode == 0:
-                        timestamps.append(timestamp - time.time() + self.coldelays[ind])
-                    elif self.archivemode == 1:
-                        timestamps.append(timestamp + self.coldelays[ind])
-                self.curve[ind].setData(timestamps, self.data_y[ind],pen=pg.mkPen(self.colorind[ind], width=2))
-                # data_x_f.append([time.mktime(xx.timetuple()) for xx in data_x_i[ind]])
-                #xdata = [time.mktime(xx.timetuple()) for xx in timestamps[ind]]
-                #self.curve[ind].setData(xdata, self.data_y[ind])
+                        self.curve[ind].setData(timestamps, self.data_y0[ind],pen=pg.mkPen(self.colorind[ind], width=2))
+                    elif self.archivemode == 1 and ind < len(self.sensorNames):
+                        self.curve[ind].setData(timestamps, self.data_y0[ind],pen=pg.mkPen(self.colorind[ind], width=2))
+                    else:
+                        self.curve[ind].setData(timestamps, self.data_y[ind-len(self.sensorNames)],pen=pg.mkPen(self.colorind[ind], width=2))
             elif chBox.isChecked() == 0:
                 devsPlotting.append(0)
                 self.curve[ind].clear()
@@ -1324,188 +1419,145 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
 
     def funccalculator(self,linenum,equation,nn):
         if equation == 'none':
-            outputval = self.data_y0[linenum][nn]
+            outputval = 0
         else:
-        #    try:
-            list_A = equation.split("AL_")
-            list_C = []
-            for nA in range(len(list_A)):
-                list_B = list_A[nA].split("_LA")
-                for nB in range(len(list_B)):
-                    list_C.append(list_B[nB])
-
-            lineN = False
-            errorflag_index = False
-            for ind, nC in enumerate(list_C):
-                if lineN is False:
-                    lineN = True
-                elif lineN is True:
-                    lineN = False
-                    lineNN = int(list_C[ind])
-                    try:
-                        list_C[ind] = str(self.data_y0[lineNN][nn])
-                    except:
-                        errorflag_index = True
-            if errorflag_index == True:
-                QtGui.QMessageBox.information(self,"Error",'Cannot interpret equation for line '+str(linenum)+" - list index out of range.\n("+str(self.equations[linenum])+").")
+            spltA = equation.split('PV[')
+            if len(spltA) > 1:
+                parts = []
+                for partA in spltA:
+                    spltB = partA.split(']')
+                    for partB in spltB:
+                        parts.append(partB)
+                equationparts = []
+                for partC in range(len(parts)):
+                    if int(partC/2) - partC/2 == 0: # even --> string
+                        equationparts.append(parts[partC])
+                    else: # odd --> value from PV
+                        value = self.data_y0[int(parts[partC])][nn]
+                        equationparts.append(str(value))
+                das_equation = "".join(equationparts)
+            else:
+                das_equation = equation
+            try:
+                outputval = numexpr.evaluate(das_equation)
+            except:
+                QtGui.QMessageBox.information(self,"Error",'Cannot interpret equation for line '+str(linenum)+":\n"+str(self.equations[linenum]))
                 self.equations[linenum] = 'none'
                 outputval = self.data_y0[linenum][nn]
-            elif errorflag_index == False:
-                pre_equation = str("".join(list_C))
-                list_D = pre_equation.split("RV")
-                das_equation = str(self.data_y0[linenum][nn]).join(list_D)
-                try:
-                    outputval = numexpr.evaluate(das_equation)
-                except:
-                    QtGui.QMessageBox.information(self,"Error",'Cannot interpret equation for line '+str(linenum)+":\n"+str(self.equations[linenum]))
-                    self.equations[linenum] = 'none'
-                    outputval = self.data_y0[linenum][nn]
         return outputval
 
     def listInit(self):
-        self.data_x = []
+        self.data_x0 = []
         self.curve = []
         self.data_y = []
+        self.data_x = []
+        self.data_ydesc = []
         self.data_y0 = []
         self.time_0 = -1
         self.equations = []
+        self.functions = []
         self.archivemode = self.parent.archivingonly
-        if self.scalarflag == 0:
+        for n in range(self.cols):
+            self.curve.append(self.contWidget.plot.getPlotItem().plot(name=self.data_y0desc[n]))
+            if self.parent.archivingonly == 0:
+                if self.ctrl_library == "Tango":
+                    prox = [PT.DeviceProxy(self.devslist[n])]
+                    for bd in prox:
+                        val = bd.read_attribute(self.attr).value
+                elif self.ctrl_library == "Randomizer":
+                    val = random.random()
+                elif self.ctrl_library == "EPICS":
+                    val = epics.PV(str(self.sensorNames[n]), auto_monitor=True).value
+                elif self.ctrl_library == "Finance":
+                    try:
+                        val = float(pdr.get_quote_yahoo(self.sensorNames[n])['price'].values.tolist()[0])
+                    except:
+                        val = float(pdr.get_quote_yahoo(self.sensorNames[n])['preMarketPrice'].values.tolist()[0])
+                self.data_y0.append([val])
+            else:
+                self.data_y0.append([0])
+            self.data_x0.append([time.time()])
+            self.devsPlotting.append(1)
+
+    def updater(self):
+        if self.archivemode == 0:
+            maxval = 0
+            maxvallbl = -1
             for n, inp in enumerate(self.devslist):
                 if self.ctrl_library == "Tango":
                     prox = [PT.DeviceProxy(inp)]
                     for bd in prox:
                         val = bd.read_attribute(self.attr).value
                 elif self.ctrl_library == "Randomizer":
-                    val = random.random()
-                for m in range(len(val)):
-                    self.curve.append(self.contWidget.plot.getPlotItem().plot(name=self.colnames[m]))
-                    self.devsPlotting.append(1)
-                    self.data_x.append([time.time()])
-                    self.equations.append('none')
-                    self.data_y.append([val[m]])
-                    self.data_y0.append([val[m]])
+                    val = self.data_y0[n][-1]+0.2*(0.5-random.random())
+                elif self.ctrl_library == "EPICS":
+                    val = epics.PV(str(self.sensorNames[n]), auto_monitor=True).value
+                elif self.ctrl_library == "Finance":
+                    try:
+                        val = float(pdr.get_quote_yahoo(self.sensorNames[n])['price'].values.tolist()[0])
+                    except:
+                        val = float(pdr.get_quote_yahoo(self.sensorNames[n])['preMarketPrice'].values.tolist()[0])
+                self.data_y0[n].append(val)
+                self.data_x0[n].append(time.time())
+                tormv = []
+                for nn in range(len(self.data_x0[n])):
+                    if self.data_x0[n][nn] - time.time() < -60 * 1.01 * self.minutes:
+                        tormv.append(nn)
+                for nnn in range(len(tormv)):
+                    del(self.data_x0[n][0])
+                    del(self.data_y0[n][0])
+                timestamps = []
+                for timestamp in self.data_x0[n]:
+                    timestamps.append(timestamp - time.time() + self.delays_y0[n])
+                if self.devsPlotting[n] == 1:
+                    if val > maxval:
+                        maxval = val
+                        maxvallbl = n
+                    self.curve[n].setData(timestamps, self.data_y0[n], pen=pg.mkPen(self.colorind[n], width=2))
+            timestamps = self.update_userlist()
+            for n in range(len(self.data_ydesc)):
+                if self.devsPlotting[n+len(self.devslist)] == 1:
+                    self.curve[n+len(self.devslist)].setData(timestamps, self.data_y[n], pen=pg.mkPen(self.colorind[n+len(self.devslist)], width=2))
+            self.contWidget.graphlbl1.setText("Maximum value / from PV:\n"+str("{0:.10f}".format(maxval))+" / "+str(maxvallbl))
 
-        elif self.scalarflag == 1:
-            for n in range(self.cols):
-                self.curve.append(self.contWidget.plot.getPlotItem().plot(name=self.colnames[n]))
-                if self.parent.archivingonly == 0:
-                    if self.ctrl_library == "Tango":
-                        prox = [PT.DeviceProxy(self.devslist[n])]
-                        for bd in prox:
-                            val = bd.read_attribute(self.attr).value
-                    elif self.ctrl_library == "Randomizer":
-                        val = random.random()
-                    elif self.ctrl_library == "EPICS":
-                        #PV = epics.PV(str(self.devslist[n]), auto_monitor=True)
-                        val = epics.PV(str(self.devslist[n]), auto_monitor=True).value
-                    self.data_y.append([val])
-                    self.data_y0.append([val])
-                else:
-                    self.data_y.append([0])
-                    self.data_y0.append([0])
-                self.data_x.append([time.time()])
-                self.devsPlotting.append(1)
-                self.equations.append('none')
-
-    def updater(self):
-        if self.archivemode == 0:
-            maxval = 0
-            maxvallbl = -1
-            if self.scalarflag == 0:
-                for n, inp in enumerate(self.devslist):
-                    if self.ctrl_library == "Tango":
-                        prox = [PT.DeviceProxy(inp)]
-                        for bd in prox:
-                            val = bd.read_attribute(self.attr).value
-                    elif self.ctrl_library == "Randomizer":
-                        val = random.random()
-                    elif self.ctrl_library == "EPICS":
-                        val = epics.PV(str(self.devslist[n]), auto_monitor=True).value
-                    preindex = 0
-                    for m in range(len(val)):
-                        self.data_y0[m + preindex].append(val[m])
-                    for m in range(len(val)):
-                        value = self.funccalculator(m,self.equations[m],len(self.data_y0[m + preindex])-1)
-                        self.data_y[m + preindex].append(value)
-                        self.data_x[m + preindex].append(time.time())
-                        tormv = []
-                        for nn in range(len(self.data_x[m + preindex])):
-                            if self.data_x[m + preindex][nn] - time.time() < -60 * 1.01 * self.graphTime:
-                                tormv.append(nn)
-                        for nnn in range(len(tormv)):
-                            del(self.data_x[m + preindex][0])
-                            del(self.data_y[m + preindex][0])
-                            del(self.data_y0[m + preindex][0])
-                        timestamps = []
-                        for timestamp in self.data_x[m + preindex]:
-                            timestamps.append(timestamp - time.time() + self.coldelays[n])
-                        if self.devsPlotting[m + preindex] == 1:
-                            if value > maxval:
-                                maxval = value
-                                maxvallbl = m + preindex
-                            self.curve[m + preindex].setData(timestamps, self.data_y[m + preindex], pen=pg.mkPen(self.colorind[m + preindex], width=2))
-            elif self.scalarflag == 1:
-                maxval = 0
-                maxvallbl = -1
-                for n, inp in enumerate(self.devslist):
-                    if self.ctrl_library == "Tango":
-                        prox = [PT.DeviceProxy(inp)]
-                        for bd in prox:
-                            val = bd.read_attribute(self.attr).value
-                    elif self.ctrl_library == "Randomizer":
-                        val = self.data_y[n][-1]+0.2*(0.5-random.random())
-                    elif self.ctrl_library == "EPICS":
-                        #PV = epics.PV(str(self.devslist[n]), auto_monitor=True)
-                        val = epics.PV(str(self.devslist[n]), auto_monitor=True).value
-                    self.data_y0[n].append(val)
-                for n, inp in enumerate(self.devslist):
-                    if self.ctrl_library == "Tango":
-                        prox = [PT.DeviceProxy(inp)]
-                        for bd in prox:
-                            val = bd.read_attribute(self.attr).value
-                    elif self.ctrl_library == "Randomizer":
-                        val = self.data_y[n][-1]+0.2*(0.5-random.random())
-                    elif self.ctrl_library == "EPICS":
-                        #PV = epics.PV(str(self.devslist[n]), auto_monitor=True)
-                        val = epics.PV(str(self.devslist[n]), auto_monitor=True).value
-                    value = self.funccalculator(n,self.equations[n],len(self.data_y0[n])-1)
-                    self.data_y[n].append(value)
-                    self.data_x[n].append(time.time())
-                    tormv = []
-                    for nn in range(len(self.data_x[n])):
-                        if self.data_x[n][nn] - time.time() < -60 * 1.01 * self.graphTime:
-                            tormv.append(nn)
-                    for nnn in range(len(tormv)):
-                        del(self.data_x[n][0])
-                        del(self.data_y[n][0])
-                        del(self.data_y0[n][0])
-                    timestamps = []
-                    for timestamp in self.data_x[n]:
-                        timestamps.append(timestamp - time.time() + self.coldelays[n])
-                    if self.devsPlotting[n] == 1:
-                        if value > maxval:
-                            maxval = value
-                            maxvallbl = n
-                        self.curve[n].setData(timestamps, self.data_y[n], pen=pg.mkPen(self.colorind[n], width=2))
-            self.contWidget.graphlbl1.setText("Maximum value / from line:\n"+str("{0:.10f}".format(maxval))+" / "+str(maxvallbl))
+    def update_userlist(self):
+        timestamps = []
+        for n in range(len(self.data_ydesc)):
+            val = self.funccalculator(n,self.equations[n],len(self.data_y0[n])-1)
+            self.data_y[n].append(val)
+            self.data_x[n].append(time.time())
+            tormv = []
+            for nn in range(len(self.data_x[n])):
+                if self.data_x[n][nn] - time.time() < -60 * 1.01 * self.minutes:
+                    tormv.append(nn)
+            for nnn in range(len(tormv)):
+                del(self.data_x[n][0])
+                del(self.data_y[n][0])
+            timestamps = []
+            for timestamp in self.data_x[n]:
+                timestamps.append(timestamp - time.time() + self.delays_y[n])
+        return timestamps
 
     def reset(self):
-        reply = QtGui.QMessageBox.question(self, 'Reset', 'Are you sure you want to clear all data? All plotting data will be lost.', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
+        reply = QtGui.QMessageBox.question(self, 'Reset, clear', 'Are you sure you want to clear all data? All plotting data will be lost.', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
         if reply == QtGui.QMessageBox.Yes:
-            del self.data_x
+            del self.data_x0
             del self.data_y
+            del self.data_x
+            del self.data_ydesc
             del self.data_y0
-            self.data_x = []
+            self.data_x0 = []
             self.data_y = []
+            self.data_x = []
+            self.data_ydesc = []
             self.data_y0 = []
             for n in range(self.cols):
                 self.curve[n].clear()
-                self.data_x.append([0])
-                self.data_y.append([0])
+                self.data_x0.append([0])
                 self.data_y0.append([0])
 
     def PlotSettings(self):
+        self.okflag = 0
         if self.pyqtgraphtimer.isActive():
             activeflag = 1
         else:
@@ -1513,15 +1565,136 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
         settingsW = PyQtGraphSetup(self)
         settingsW.exec_()
         if self.okflag == 1:
-            self.acceptNewPlotSettings()
-            self.chBoxCheck()
             if activeflag == 1:
                 self.pyqtgraphtimer.stop()
-                self.pyqtgraphtimer.start(1000/self.updateFreq)
+            self.killdynamiclegendgroup()
+            self.constructLegendItem()
+            self.acceptNewPlotSettings()
+            self.createLineDict()
+            maxrows = 20
+            colcount = 0
+            rowcount = -1
+            chBoxes = self.contWidget.chGroupBox.findChildren(QtGui.QCheckBox)
+            for ind in range(len(self.data_y0desc)):
+                rowcount += 1
+                if rowcount == maxrows-1:
+                    rowcount = -1
+                    colcount += 2
+            rowcount += 1
+            self.chBoxCheck()
+            if activeflag == 1:
+                self.pyqtgraphtimer.start(1000/self.updateFrequency)
+
+    def createLineDict(self):
+
+        if len(self.rmvList) > 1:
+            self.rmvList.sort()
+
+        for m in reversed(range(len((self.rmvList)))):
+            self.data_x[self.rmvList[m]].clear()
+            self.data_y[self.rmvList[m]].clear()
+            self.curve[self.rmvList[m]].clear()
+            self.devsPlotting[self.rmvList[m]].clear()
+
+        self.devsPlotting = [i for i in self.devsPlotting  if i]
+        self.data_x = [i for i in self.data_x  if i]
+        self.data_y = [i for i in self.data_y  if i]
+
+        for n in range(len(self.data_y),len(self.data_ydesc)):
+            self.devsPlotting.append(1)
+            self.data_x.append([0])
+            self.data_y.append([0])
+            self.curve.append(self.contWidget.plot.getPlotItem().plot(name=self.data_ydesc[n]))
+
+    def constructLegendItem(self):
+        rowcount = -1
+        colcount = 0
+        maxrows = 20
+        colind = -1
+        self.maxwidth = 0
+        for ind,dev in enumerate(self.data_y0desc):
+            rowcount += 1
+            colind += 1
+            chBox = QtGui.QCheckBox(str(dev))
+            chBox.setToolTip(str(self.devslist[ind]))
+            btn = QtGui.QPushButton()
+            colorscheme = self.colorind[colind]
+            col0 = str(colorscheme[0])
+            col1 = str(colorscheme[1])
+            col2 = str(colorscheme[2])
+            btn.setStyleSheet("background-color:rgb("+col0+","+col1+","+col2+")");
+            btn.setFixedWidth(20)
+            chBox.setChecked(self.devsPlotting[ind])
+            chBox.stateChanged.connect(self.chBoxCheck)
+            btn.clicked.connect(partial(self.colorbtnRGBchange,str(ind)))
+            try:
+                fm = QtGui2.QFontMetrics(chBox.font())
+            except:
+                fm = QtGui.QFontMetrics(chBox.font())
+            chBoxWidth = fm.width(chBox.text())
+            chBox.setFixedWidth(int(chBoxWidth*1.5))
+            if chBoxWidth > self.maxwidth:
+                self.maxwidth = chBoxWidth
+            self.ch_sublayout.addWidget(chBox,rowcount,colcount+1,1,1)
+            self.ch_sublayout.addWidget(btn,rowcount,colcount,1,1)
+            if rowcount == maxrows-1:
+                rowcount = -1
+                colcount += 2
+            if colind > len(self.colorind)-1:
+                colind = -1
+
+        for ind,dev in enumerate(self.data_ydesc):
+            rowcount += 1
+            colind += 1
+            if colind > len(self.colorind)-1:
+                if colind < len(self.colorlist):
+                    self.colorind.append(self.colorlist[colind])
+                else:
+                    colind = 0
+            chBox = QtGui.QCheckBox(str(dev))
+            chBox.setToolTip(str(self.equations[ind]))
+            btn = QtGui.QPushButton()
+            colorscheme = self.colorind[colind]
+            col0 = str(colorscheme[0])
+            col1 = str(colorscheme[1])
+            col2 = str(colorscheme[2])
+            btn.setStyleSheet("background-color:rgb("+col0+","+col1+","+col2+")");
+            btn.setFixedWidth(20)
+            chBox.setChecked(self.devsPlotting[ind])
+            chBox.stateChanged.connect(self.chBoxCheck)
+            btn.clicked.connect(partial(self.colorbtnRGBchange,str(ind+len(self.data_y0desc))))
+            try:
+                fm = QtGui2.QFontMetrics(chBox.font())
+            except:
+                fm = QtGui.QFontMetrics(chBox.font())
+            chBoxWidth = fm.width(chBox.text())
+            chBox.setFixedWidth(chBoxWidth*1.5)
+            if chBoxWidth > self.maxwidth:
+                self.maxwidth = chBoxWidth
+            self.ch_sublayout.addWidget(chBox,rowcount,colcount+1,1,1)
+            self.ch_sublayout.addWidget(btn,rowcount,colcount,1,1)
+            if rowcount == maxrows-1:
+                rowcount = -1
+                colcount += 2
+        chBoxes = self.contWidget.chGroupBox.findChildren(QtGui.QCheckBox)
+        for chBox in chBoxes:
+            chBox.setMinimumWidth(self.maxwidth+50)
+
+    def killdynamiclegendgroup(self):
+        # Destroy / kill all chboxes and buttons currently constructed in the ch_sublayout.
+        for i in reversed(range(self.ch_sublayout.count())):
+            item = self.ch_sublayout.itemAt(i)
+            if isinstance(item, QtGui.QWidgetItem):
+                item.widget().close()
+        for chbox in self.contWidget.chGroupBox.findChildren(QtGui.QCheckBox):
+            chbox.deleteLater()
+        for button in self.contWidget.chGroupBox.findChildren(QtGui.QPushButton):
+            button.deleteLater()
 
     def acceptNewPlotSettings(self):
-        if self.pyqtgraphtimer.isActive():
-            self.contWidget.plot.setXRange(-60 * 1.01 * self.graphTime,0)
+        reply = QtGui.QMessageBox.question(self, 'Rescaling', 'Rescale horizontal axis?', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
+        if reply == QtGui.QMessageBox.Yes:
+            self.contWidget.plot.setXRange(-60 * 1.01 * self.minutes,0)
         self.contWidget.plot.setLabel('left',self.ylabel,color='white',size = 30)
         if self.archivemode == 0:
             reply = QtGui.QMessageBox.question(self, 'Equations application', 'Do you want the equations to be applied on previous values in the plot?', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
@@ -1532,18 +1705,12 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
         else:
             applyall = True
         if applyall == True:
-            if self.scalarflag == 0:
-                for n in range(self.cols):
-                    for m in range(len(self.data_y[n])):
-                        self.data_y[n][m] = self.funccalculator(n,self.equations[n],m)
-                    self.curve[n].setData(self.data_x[n], self.data_y[n], pen=pg.mkPen(self.colorind[n], width=2))
-            elif self.scalarflag == 1:
-                self.data_y.clear()
-                for n in range(self.cols):
-                    data_y = []
-                    for m in range(len(self.data_y0[n])):
-                        data_y.append(self.funccalculator(n,self.equations[n],m))
-                    self.data_y.append(data_y)
+            for n in range(len(self.data_ydesc)):
+                data_y = []
+                # for m in range(len(self.data_y[n])):
+                #     data_y.append(self.funccalculator(n,self.equations[n],m))
+                # for n in range(self.cols,self.cols+len(self.data_ydesc)): # vector
+                # self.curve[n].setData(self.data_x0[n], self.data_y0[n], pen=pg.mkPen(self.colorind[n], width=2)) # vector
 
     def loadclick(self):
         items = ['From DataBase', 'From File']
@@ -1554,7 +1721,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             self.pyqtgraphtimer.stop()
             if str(item) == 'From File':
                 nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File')
-                if nameoffile:
+                if any(map(lambda x: any(x), nameoffile)):
                     if isinstance(nameoffile, tuple):
                         nameoffile = str(nameoffile[0])
                     file0 = open(nameoffile, 'r')
@@ -1588,8 +1755,6 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                         equations = []
                         for n in range(self.cols):
                             self.curve[n].clear()
-                            equations.append('none')
-                        self.equations = equations
                         for n in range(len(data_x)):
                             data_x_i = [float(i) for i in data_x_L[n]]
                             data_x_f = []
@@ -1619,38 +1784,96 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                 ittt = ArchiverCalendarWidget(self)
                 ittt.exec_()
                 if self.okflag == 1:
-                    items2 = ['ESS Archiver [EPICS]','MAX IV Archiver (Cassandra) [Tango]']
-                    item2, ok = QtGui.QInputDialog.getItem(self, 'Database Type', 'Select database',items2, 0, False)
+                    if self.parent.ctrl_library == "Tango":
+                        items2 = ['Cassandra']
+                    elif self.parent.ctrl_library == "EPICS":
+                        items2 = ['EPICS']
+                    elif self.parent.ctrl_library == "Finance":
+                        items2 = ['YAHOO Finance']
+                    item2, ok = QtGui.QInputDialog.getItem(self, 'Database Type', 'Select archiver',items2, 0, False)
                     if ok and item2:
                         stopflag = 0
-                        if str(item2) == 'ESS Archiver [EPICS]':
-                            archiver_url = 'http://archiver-01.tn.esss.lu.se:17668/retrieval/data/getData.json?pv={}&from={}&to={}'
+                        if str(item2) == 'EPICS':
                             trystart = datetime.datetime.combine(self.startdate,self.starttime)
                             trystop = datetime.datetime.combine(self.enddate,self.stoptime)
                             trystart = trystart.strftime('%Y-%m-%dT%H:%M:%SZ')
                             trystop = trystop.strftime('%Y-%m-%dT%H:%M:%SZ')
-                            #PV = epics.PV(str(self.devslist[n]), auto_monitor=True)
-                            #val = epics.PV(str(self.devslist[n]), auto_monitor=True).value
-                            x = []
-                            y = []
-                            data_x_i = []
+                            archiver_url = 'http://archiver-01.tn.esss.lu.se:17668/retrieval/data/getData.json?pv={}&from={}&to={}'
+                            reply = QtGui.QMessageBox.question(self, 'Customize', 'Use predefined archiver URL?\n'+archiver_url,QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+                            if reply == QtGui.QMessageBox.No:
+                                archiver_url_new, ok = QtGui.QInputDialog.getText(self,"Custom Archiver URL","Define the custom archiver URL")
+                                try:
+                                    x = []
+                                    y = []
+                                    data_x_i = []
+                                    data_y_i = []
+                                    data_x_ff = []
+                                    data_x_f = []
+                                    for ind, PV in enumerate(self.data_y0desc):
+                                        url = archiver_url_new.format(PV,trystart,trystop)
+                                        pv_page = requests.get(url)
+                                        pv_rawdata = json.loads(pv_page.content)
+                                        pv_value=[i['val'] for i in pv_rawdata[0]['data']]
+                                        pv_time=[datetime.datetime.utcfromtimestamp(i['secs']+i['nanos']/1e9) for i in pv_rawdata[0]['data']]
+                                        x.append(pv_time)
+                                        y.append(pv_value)
+                                        data_x_i.append(pv_time)
+                                        data_x_f.append([time.mktime(xx.timetuple()) for xx in data_x_i[ind]])
+                                        data_x_ff.append([datetime.datetime.fromtimestamp(value).strftime("%Y/%m/%d %H:%M:%S") for value in data_x_f[ind]])
+                                        data_y_i.append([float(i) for i in y[ind]])
+                                except:
+                                    reply = QtGui.QMessageBox.question(self, 'Fail', 'Failed to use custom archiver url:\n'+archiver_url_new+'\nUse pre-defined one instead?',QtGui.QMessageBox.Yes, QtGui.QMessageBox.No)
+                            if reply == QtGui.QMessageBox.Yes:
+                                x = []
+                                y = []
+                                data_x_i = []
+                                data_y_i = []
+                                data_x_ff = []
+                                data_x_f = []
+                                for ind, PV in enumerate(self.data_y0desc):
+                                    url = archiver_url.format(PV,trystart,trystop)
+                                    pv_page = requests.get(url)
+                                    pv_rawdata = json.loads(pv_page.content)
+                                    pv_value=[i['val'] for i in pv_rawdata[0]['data']]
+                                    pv_time=[datetime.datetime.utcfromtimestamp(i['secs']+i['nanos']/1e9) for i in pv_rawdata[0]['data']]
+                                    x.append(pv_time)
+                                    y.append(pv_value)
+                                    data_x_i.append(pv_time)
+                                    data_x_f.append([time.mktime(xx.timetuple()) for xx in data_x_i[ind]])
+                                    data_x_ff.append([datetime.datetime.fromtimestamp(value).strftime("%Y/%m/%d %H:%M:%S") for value in data_x_f[ind]])
+                                    data_y_i.append([float(i) for i in y[ind]])
+
+                        elif str(item2) == 'YAHOO Finance' or str(item2) == "STOOQ Finance":
+                            trystart = datetime.datetime.combine(self.startdate,self.starttime)
+                            trystop = datetime.datetime.combine(self.enddate,self.stoptime)
+                            trystart = trystart.strftime('%Y-%m-%dT%H:%M:%SZ')
+                            trystop = trystop.strftime('%Y-%m-%dT%H:%M:%SZ')
+                            startd = trystart.split("T")[0].split("-")
+                            endd = trystop.split("T")[0].split("-")
                             data_y_i = []
-                            data_x_ff = []
+                            data_x_i = []
                             data_x_f = []
-                            for ind, PV in enumerate(self.colnames):
-                                url = archiver_url.format(PV,trystart,trystop)
-                                pv_page = requests.get(url)
-                                pv_rawdata = json.loads(pv_page.content)
-                                pv_value=[i['val'] for i in pv_rawdata[0]['data']]
-                                pv_time=[datetime.datetime.utcfromtimestamp(i['secs']+i['nanos']/1e9) for i in pv_rawdata[0]['data']]
-                                x.append(pv_time)
-                                y.append(pv_value)
-                                data_x_i.append(pv_time)
+                            data_x_ff = []
+                            for idx, sn in enumerate(self.sensorNames):
+                                if str(item2) == "YAHOO Finance":
+                                    data = pdr.get_data_yahoo(str(sn), start=datetime.datetime(int(startd[0]), int(startd[1]), int(startd[2])), end=datetime.datetime(int(endd[0]), int(endd[1]), int(endd[2])))['Close']
+                                elif str(item2) == "STOOQ Finance":
+                                    data = pdr.get_data_stooq(str(sn), start=datetime.datetime(int(startd[0]), int(startd[1]), int(startd[2])), end=datetime.datetime(int(endd[0]), int(endd[1]), int(endd[2])))['Close']
+                                data2append = []
+                                for m in range(0,len(data)):
+                                    data2append.append(data[m])
+                                data_y_i.append(data2append) # the list of dataframes of the stocks
+                            dates = data.index.copy()
+                            x = []
+                            for m in range(len(dates)):
+                                x.append(str(dates[m]))
+
+                            for ind in range(0,len(x)):
+                                data_x_i.append([datetime.datetime.strptime(i,'%Y-%m-%d %H:%M:%S') for i in x])
                                 data_x_f.append([time.mktime(xx.timetuple()) for xx in data_x_i[ind]])
                                 data_x_ff.append([datetime.datetime.fromtimestamp(value).strftime("%Y/%m/%d %H:%M:%S") for value in data_x_f[ind]])
-                                data_y_i.append([float(i) for i in y[ind]])
 
-                        elif str(item2) == 'MAX IV Archiver (Cassandra) [Tango]':
+                        elif str(item2) == 'Cassandra':
                             try:
                                 from Cassandra_ImportData import CassImp
                                 errflag = 0
@@ -1664,7 +1887,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                                 data_y_i = []
                                 data_x_ff = []
                                 data_x_f = []
-                                for ind, device in enumerate(self.toSpecialList):
+                                for ind, device in enumerate(self.sensorNames):
                                     dev = device.split('/')
                                     dev = '*'.join(dev)
                                     xval,yval = CassImp().readingdata(dev,str(self.startdate),str(self.enddate))
@@ -1688,21 +1911,17 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                                 self.parent.archivingonly = 0
                             if anamode == 1:
                                 self.archivemode = 1
-                                self.data_x = data_x_f
-                                self.data_y = data_y_i
+                                self.data_x0 = data_x_f
                                 self.data_y0 = data_y_i[:]
                                 if self.contWidget.plotbtn.text() == 'Stop Plotting':
                                     self.pyqtgraphtimer.stop()
                                     self.contWidget.plotbtn.setText('Start Plotting')
-                                equations = []
-                                coldelays = []
+                                delays_y0 = []
                                 for n in range(self.cols):
                                     self.curve[n].clear()
-                                    coldelays.append(0)
-                                    equations.append('none')
-                                self.equations = equations
-                                self.coldelays = coldelays
-                                for n in range(len(x)):
+                                    delays_y0.append(0)
+                                self.delays_y0 = delays_y0
+                                for n in range(len(self.sensorNames)):
                                     if n == 0:
                                         xmin = min(data_x_f[n])
                                         xmax = max(data_x_f[n])
@@ -1731,16 +1950,17 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                                     xticks = [list(xdict0.items())[1::int(xlen*0.95)],list(xdict.items())[1::2]]
                                     xtii.setTicks(xticks)
                                 plotW.showGrid(x=True,y=True)
+
     def saveclick(self):
         options = QtGui.QFileDialog.Options()
         options |= QtGui.QFileDialog.DontUseNativeDialog
         fileName = QtGui.QFileDialog.getSaveFileName(self,"QtGui.QFileDialog.getSaveFileName()","","All Files (*);;Text Files (*.txt)", options=options)
-        if fileName:
+        if any(map(lambda x: any(x), fileName)):
             if isinstance(fileName, tuple):
                 fileName = str(fileName[0])
             file0 = open(fileName, 'w')
-            self.toSave = str(self.data_y)
-            self.toSave = str('Date and time for save: '+str(datetime.datetime.now())+'. '+"Ylabel: "+self.ylabel+'. Plotting frequency: '+str(self.updateFreq) + 'Hz. Plotting time range: -'+str(self.graphTime*60)+'-0 s.'+'\n\n'+'x [s] = '+str(self.data_x)+'\n'+'y = '+str(self.data_y))
+            self.toSave = str(self.data_y0)
+            self.toSave = str('Date and time for save: '+str(datetime.datetime.now())+'. '+"Ylabel: "+self.ylabel+'. Plotting frequency: '+str(self.updateFrequency) + 'Hz. Plotting time range: -'+str(self.minutes*60)+'-0 s.'+'\n\n'+'x [s] = '+str(self.data_x)+'\n'+'y = '+str(self.data_y))
             file0.write(self.toSave)
             file0.close()
 
@@ -1748,8 +1968,8 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
         self.archivemode = 0
         if self.contWidget.plotbtn.text() == 'Start Plotting':
             self.contWidget.plotbtn.setText('Stop Plotting')
-            self.pyqtgraphtimer.start(1000/self.updateFreq)
-            self.contWidget.plot.setXRange(-60 * 1.01 * self.graphTime,0)
+            self.pyqtgraphtimer.start(int(1000/self.updateFrequency))
+            self.contWidget.plot.setXRange(-60 * 1.01 * self.minutes,0)
             if self.time_0 == -1:
                 self.time_0 = time.time()
         elif self.contWidget.plotbtn.text() == 'Stop Plotting':
@@ -1763,7 +1983,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             self.pyqtgraphtimer.stop()
             self.close()
         else:
-            event.ignore()
+            event.ignore() # Must add waveform support
 
 class ArchiverCalendarWidget(QtGui.QDialog):
     def __init__(self, parent = PyQtGraphPlotter):
@@ -1864,102 +2084,277 @@ class ArchiverCalendarWidget(QtGui.QDialog):
 
     def cancelclicked(self):
         self.parent.okflag = 0
-        self.close()
+        self.close() # Add support for EPICS and different archiving systems
 
 class PyQtGraphSetup(QtGui.QDialog):
     def __init__(self, parent = PyQtGraphPlotter):
         super(PyQtGraphSetup, self).__init__(parent)
         self.parent = parent
         self.setWindowTitle("Settings")
-        listgui = QtGui.QFormLayout(self)
-
+        listgui = QtGui.QGridLayout()
         freqlbl = QtGui.QLabel("Plotting frequency: [Hz]")
         self.textboxF = QtGui.QDoubleSpinBox()
-        self.textboxF.setValue(parent.updateFreq)
-
+        self.textboxF.setValue(parent.updateFrequency)
         minulbl = QtGui.QLabel("# of minutes in spectrogram: [min]")
         self.textboxM = QtGui.QDoubleSpinBox()
-        self.textboxM.setValue(parent.graphTime)
-
+        self.textboxM.setValue(parent.minutes)
         yaxilbl = QtGui.QLabel("Define the Y-label for the plot:")
         self.textboxL = QtGui.QLineEdit(parent.ylabel)
-
-        equationslbl = QtGui.QPushButton("Define equations for all curves;\n'none' means it will return the value.\nUse 'RV' as readvalue in equation.\nUse rows to separate each device.\nTo insert the value of another \ndevice/vector, type AL_NN_LA where NN is the \nnumerical index of that line.\nClick to show mathematical functions accepted.")
-
-        self.eqChBoxGroup = QtGui.QGroupBox()
-        self.eqlayout = QtGui.QGridLayout()
-
-        self.eqlayout.addWidget(self.eqChBoxGroup)
-        self.eqlayout = QtGui.QGridLayout(self.eqChBoxGroup)
-
-        self.textboxE = QtGui.QPlainTextEdit('\n'.join(self.parent.equations))
-        self.nEq = len(self.parent.equations)
-
-        equationslbl.clicked.connect(self.mathfunctionslist)
+        helpbutton = QtGui.QPushButton("Help")
+        equationslbl = QtGui.QPushButton("Pre-defined mathematical functions")
+        equationsedit = QtGui.QPushButton("Edit user-defined mathematical functions")
         okbtn = QtGui.QPushButton('Ok')
         nobtn = QtGui.QPushButton('Cancel')
+        addLineBtn = QtGui.QPushButton("Add New Line")
+        rmvLineBtn = QtGui.QPushButton("Remove Line")
+        self.parent.rmvList = []
+        self.rmvList = []
+        self.addlist = []
+        self.tabs = QtGui.QTabWidget()
+        self.tab1 = QtGui.QWidget()
+        self.tab2 = QtGui.QWidget()
+        self.tabs.addTab(self.tab1,"PV:s")
+        self.tabs.addTab(self.tab2,"Functions")
+        self.tabgridL1 = QtGui.QGridLayout()
+        self.tabgridL2 = QtGui.QGridLayout()
+
+        self.equations = self.parent.equations[:]
+        self.data_ydesc = self.parent.data_ydesc[:]
+        self.delays_y0 = self.parent.delays_y0[:]
+        self.delays_y = self.parent.delays_y[:]
+
+        self.generatePVsTab()
+        self.generateFunctionsTab()
+
+        rowL = 0
         if self.parent.parent.archivingonly == 0 and self.parent.archivemode == 0:
-            listgui.addRow(freqlbl,self.textboxF)
-            listgui.addRow(minulbl,self.textboxM)
-        listgui.addRow(yaxilbl,self.textboxL)
+            listgui.addWidget(freqlbl,rowL,0,1,1)
+            listgui.addWidget(self.textboxF,rowL,1,1,1)
+            listgui.addWidget(minulbl,rowL+1,0,1,1)
+            listgui.addWidget(self.textboxM,rowL+1,1,1,1)
+            rowL = 2
+        listgui.addWidget(yaxilbl,rowL,0,1,1)
+        listgui.addWidget(self.textboxL,rowL,1,1,1)
+        rowL += 1
+        listgui.addWidget(addLineBtn,rowL,1,1,1)
+        listgui.addWidget(helpbutton,rowL,0,1,1)
+        rowL += 1
+        listgui.addWidget(equationslbl,rowL,0,1,1)
+        listgui.addWidget(rmvLineBtn,rowL,1,1,1)
+        rowL += 1
+        listgui.addWidget(equationsedit,rowL,0,1,1)
+        rowL += 1
+        listgui.addWidget(self.tabs,rowL,0,1,2)
+        rowL += 1
+        listgui.addWidget(okbtn,rowL,0,1,1)
+        listgui.addWidget(nobtn,rowL,1,1,1)
 
-        self.coldelays = self.parent.coldelays
+        self.setLayout(listgui)
 
-        row = 0
-        self.eqlayout.addWidget(QtGui.QLabel("Description"),row,0,1,1)
-        self.eqlayout.addWidget(QtGui.QLabel("Equation"),row,1,1,1)
-        self.eqlayout.addWidget(QtGui.QLabel("Delay [s]"),row,2,1,1)
-        for N in range(len(self.parent.equations)):
-            row += 1
-            textbox = QtGui.QLineEdit(str(self.parent.equations[N]), self.eqChBoxGroup)
-            lbl = QtGui.QLabel(str(self.parent.colnames[N])+" (line "+str(N)+"):")
-            spin = QtGui.QDoubleSpinBox()
-            spin.setDecimals(9)
-            spin.setRange(-1e8, 1e8) # +/- 3 years maximum
-            spin.setValue(float(self.coldelays[N]))
-            self.eqlayout.addWidget(lbl,row,0,1,1)
-            self.eqlayout.addWidget(textbox,row,1,1,1)
-            self.eqlayout.addWidget(spin,row,2,1,1)
-        if row < 4:
-            listgui.addRow(equationslbl,self.eqChBoxGroup)
-        else:
-            self.scrollarea = QtGui.QScrollArea(self)
-            self.scrollarea.setWidgetResizable(True)
-            self.scrollarea.setWidget(self.eqChBoxGroup)
-            listgui.addRow(equationslbl,self.scrollarea)
-
-
-        listgui.addRow(okbtn, nobtn)
+        helpbutton.clicked.connect(self.helpclicked)
+        equationslbl.clicked.connect(self.mathfunctionslist)
+        addLineBtn.clicked.connect(self.addnewline)
+        rmvLineBtn.clicked.connect(self.removeline)
         okbtn.clicked.connect(self.confirmfunc)
         nobtn.clicked.connect(self.cancelfunc)
 
+    def generatePVsTab(self):
+        self.eq_1_ChBoxGroup = QtGui.QGroupBox()
+        self.eq_1_layout = QtGui.QGridLayout()
+        self.eq_1_layout.addWidget(self.eq_1_ChBoxGroup)
+        self.eq_1_layout = QtGui.QGridLayout(self.eq_1_ChBoxGroup)
+        self.eq_1_layout.addWidget(QtGui.QLabel("PV"),0,0,1,1)
+        self.eq_1_layout.addWidget(QtGui.QLabel("Description"),0,1,1,1)
+        self.eq_1_layout.addWidget(QtGui.QLabel("Delay [s]"),0,2,1,1)
+        row = 0
+        for N in range(len(self.parent.data_y0desc)):
+            row += 1
+            textbox = QtGui.QLineEdit(str(self.parent.data_y0desc[N]), self.eq_1_ChBoxGroup)
+            lbl = QtGui.QLabel(str(self.parent.devslist[N])+" (line "+str(N)+"):")
+            spin = QtGui.QDoubleSpinBox()
+            spin.setDecimals(9)
+            spin.setRange(-1e8, 1e8) # +/- 3 years maximum
+            spin.setValue(float(self.delays_y0[N]))
+            self.eq_1_layout.addWidget(lbl,row,0,1,1)
+            self.eq_1_layout.addWidget(textbox,row,1,1,1)
+            self.eq_1_layout.addWidget(spin,row,2,1,1)
+        if row < 4:
+            self.tabgridL1.addWidget(self.eq_1_ChBoxGroup,0,0,1,1)
+        else:
+            self.scrollarea1 = QtGui.QScrollArea(self)
+            self.scrollarea1.setWidgetResizable(True)
+            self.scrollarea1.setWidget(self.eq_1_ChBoxGroup)
+            self.tabgridL1.addWidget(self.scrollarea1,0,0,1,1)
+            #listgui.addWidget(self.scrollarea,rowL,0,1,2)
+        self.tab1.setLayout(self.tabgridL1)
+
+    def generateFunctionsTab(self):
+        self.eq_2_ChBoxGroup = QtGui.QGroupBox()
+        self.eq_2_layout = QtGui.QGridLayout()
+        self.eq_2_layout.addWidget(self.eq_2_ChBoxGroup)
+        self.eq_2_layout = QtGui.QGridLayout(self.eq_2_ChBoxGroup)
+        self.eq_2_layout.addWidget(QtGui.QLabel("Name"),0,0,1,2)
+        self.eq_2_layout.addWidget(QtGui.QLabel("Equation"),0,2,1,1)
+        self.eq_2_layout.addWidget(QtGui.QLabel("Delay [s]"),0,3,1,1)
+        row = 0
+        for N in range(len(self.data_ydesc)):
+            row += 1
+            textboxE = QtGui.QLineEdit(str(self.equations[N]), self.eq_2_ChBoxGroup)
+            textboxD = QtGui.QLineEdit(str(self.data_ydesc[N]), self.eq_2_ChBoxGroup)
+            lbl = QtGui.QLabel(str("(line "+str(N)+"):"))
+            spin = QtGui.QDoubleSpinBox()
+            spin.setDecimals(9)
+            spin.setRange(-1e8, 1e8) # +/- 3 years maximum
+            spin.setValue(float(self.delays_y[N]))
+            textboxE.editingFinished.connect(partial(self.equationChanged,N,textboxE))
+            self.eq_2_layout.addWidget(textboxD,row,0,1,1)
+            self.eq_2_layout.addWidget(lbl,row,1,1,1)
+            self.eq_2_layout.addWidget(textboxE,row,2,1,1)
+            self.eq_2_layout.addWidget(spin,row,3,1,1)
+        self.scrollarea2 = QtGui.QScrollArea(self)
+        self.scrollarea2.setWidgetResizable(True)
+        self.scrollarea2.setWidget(self.eq_2_ChBoxGroup)
+        self.tabgridL2.addWidget(self.scrollarea2,0,0,1,1)
+        self.tab2.setLayout(self.tabgridL2)
+
+    def equationChanged(self,index,equation):
+
+        self.equations[index] = equation.text()
+
+    def addnewline(self):
+        text1,ok1 = QtGui.QInputDialog.getText(self,"New Line","Define the name of the new line:")
+        if ok1 and text1:
+            if text1 in self.data_ydesc:
+                QtGui.QMessageBox.information(self,'Error','Duplicate names are not allowed.')
+            else:
+                text2,ok2 = QtGui.QInputDialog.getText(self,"New Line","Define the equation for the new line:")
+                if ok2 and text2:
+                    self.delays_y.append(0)
+                    self.data_ydesc.append(text1)
+                    self.equations.append(text2)
+                    self.addlist.append(len(self.data_ydesc)-1)
+                    self.generateFunctionsTab()
+
+    def removeline(self):
+        items = self.data_ydesc
+        if len(items) > 0:
+            item,ok = QtGui.QInputDialog.getItem(self,"Remove lines","Which lines?",items,0,False)
+            if item and ok:
+                for n in range(len(self.data_ydesc)):
+                    if str(item) == str(self.data_ydesc[n]):
+                        ind = n
+                self.delays_y.pop(ind)
+                self.data_ydesc.pop(ind)
+                self.equations.pop(ind)
+                rmvtrue = 1
+                for nn in range(len(self.addlist)):
+                    if self.addlist[nn] == ind:
+                        rmvind = nn
+                        rmvtrue = 0
+                if rmvtrue == 1:
+                    for n in range(len(self.parent.data_ydesc)):
+                        if str(item) == str(self.parent.data_ydesc[n]):
+                            self.rmvList.append(n)
+                else:
+                    self.addlist.pop(rmvind)
+                self.generateFunctionsTab()
+
+    def helpclicked(self):
+        QtGui.QMessageBox.information(self,'Help','RV means readvalue.')
+
     def mathfunctionslist(self):
-        QtGui.QMessageBox.information(self,'Mathematical functions accepted:\n',str(self.parent.mathdict.keys()))
+        funcs = "\n".join(self.get_all_functions_from_module(math).keys())
+        QtGui.QMessageBox.information(self,'Mathematical Functions', 'Pre-defined mathematical functions: \n\n'+funcs)
+
+    def get_all_functions_from_module(self, module, functions={}):
+        for f in math.__dict__:
+          obj = getattr(math, f)
+          if callable(obj):
+           functions[f] = obj
+        return functions
+
+    def testequations(self,equation):
+            if equation == 'none':
+                outputval = 0
+            else:
+                spltA = equation.split('PV[')
+                if len(spltA) > 1:
+                    parts = []
+                    for partA in spltA:
+                        spltB = partA.split(']')
+                        for partB in spltB:
+                            parts.append(partB)
+                    equationparts = []
+                    for partC in range(len(parts)):
+                        if int(partC/2) - partC/2 == 0: # even --> string
+                            equationparts.append(parts[partC])
+                        else: # odd --> value from PV
+                            value = self.parent.data_y0[int(parts[partC])][0]
+                            equationparts.append(str(value))
+                    das_equation = "".join(equationparts)
+                else:
+                    das_equation = equation
+                numexpr.evaluate(das_equation)
 
     def confirmfunc(self):
-        equations = []
-        delays = []
-        cols = int(len(self.eqChBoxGroup.findChildren(QtGui.QLineEdit)) / self.nEq) - 1
+        descriptions_y0 = []
+        delays_y0 = []
+        cols1 = int(len(self.eq_1_ChBoxGroup.findChildren(QtGui.QLineEdit)) / len(self.eq_1_ChBoxGroup.findChildren(QtGui.QDoubleSpinBox))) - 1
         m = -1
-        for n, textbx in enumerate(self.eqChBoxGroup.findChildren(QtGui.QLineEdit)):
+        for spin in self.eq_1_ChBoxGroup.findChildren(QtGui.QDoubleSpinBox):
+            delays_y0.append(float(spin.value()))
+        for n, textbx in enumerate(self.eq_1_ChBoxGroup.findChildren(QtGui.QLineEdit)):
             m += 1
             if m == 0:
-                equations.append(str(textbx.text()))
-            elif m == cols:
+                descriptions_y0.append(str(textbx.text()))
+            elif m == cols1:
                 m = -1
-        for spin in self.eqChBoxGroup.findChildren(QtGui.QDoubleSpinBox):
-            delays.append(float(spin.value()))
-        self.parent.graphTime = self.textboxM.value()
-        self.parent.updateFreq = self.textboxF.value()
-        self.parent.ylabel = self.textboxL.text()
-        self.parent.equations = equations
-        self.parent.coldelays = delays
-        self.parent.okflag = 1
-        self.close()
+        equations = []
+        descriptions_y = []
+        delays_y = []
+        if len(self.data_ydesc) > 0:
+            cols2 = int(len(self.eq_2_ChBoxGroup.findChildren(QtGui.QLineEdit)) / len(self.data_ydesc)) - 1
+            m = -1
+            for spin in self.eq_2_ChBoxGroup.findChildren(QtGui.QDoubleSpinBox):
+                delays_y.append(float(spin.value()))
+            for n, textbx in enumerate(self.eq_2_ChBoxGroup.findChildren(QtGui.QLineEdit)):
+                m += 1
+                if m == 0:
+                    equations.append(str(textbx.text()))
+                elif m == cols2:
+                    m = -1
+                else:
+                    descriptions_y.append(str(textbx.text()))
+
+        equationerrorflag = 0
+
+        for ind, equation in enumerate(equations):
+            try:
+                self.testequations(equation)
+            except:
+                if equationerrorflag == 0:
+                    equationerrormessage = str('Error with equations for:\n'+str(descriptions_y[ind])+"  ,  "+str(equation))
+                    equationerrorflag = 1
+                else:
+                    equationerrormessage = str(equationerrormessage+'\n'+str(descriptions_y[ind])+"  ,  "+str(equation))
+        if equationerrorflag == 1:
+            QtGui.QMessageBox.information(self,'Equation error(s)', equationerrormessage)
+        elif equationerrorflag == 0:
+            self.parent.rmvList = self.rmvList
+            self.parent.minutes = self.textboxM.value()
+            self.parent.updateFrequency = self.textboxF.value()
+            self.parent.ylabel = self.textboxL.text()
+            self.parent.equations = equations
+            self.parent.data_ydesc = descriptions_y
+            self.parent.data_y0desc = descriptions_y0
+            self.parent.delays_y0 = delays_y0
+            self.parent.delays_y = delays_y
+            self.parent.okflag = 1
+            self.close()
 
     def cancelfunc(self):
         self.parent.okflag = 0
-        self.close()
+        self.close() # ???
 
 class PyQtGraphContainerWidget(QtGui.QWidget):
     def __init__(self, parent=None):
@@ -1970,35 +2365,49 @@ class PyQtGraphContainerWidget(QtGui.QWidget):
         self.plot = pg.PlotWidget()
         self.plot.setLabel('bottom','Time [s]',color='red',size = 30)
         self.plot.showGrid(x=True,y=True)
-        self.layout.addWidget(self.plot,0,0,1,6)
+        self.layout.addWidget(self.plot,0,0,1,7)
         self.chGroupBox = QtGui.QGroupBox()
 
         self.plotbtn = QtGui.QPushButton('Start Plotting')
         self.layout.addWidget(self.plotbtn, 1,0,1,1)
-        self.showhidebtn = QtGui.QPushButton('Plot Settings')
-        self.layout.addWidget(self.showhidebtn, 2,0,1,1)
-
-        self.savebtn = QtGui.QPushButton('Save Plot Data')
-        self.layout.addWidget(self.savebtn, 1,1,1,1)
+        self.plotsettingsbtn = QtGui.QPushButton('Plot Settings')
+        self.layout.addWidget(self.plotsettingsbtn, 2,0,1,1)
         self.loadbtn = QtGui.QPushButton('Load Plot Data')
         self.layout.addWidget(self.loadbtn, 2,1,1,1)
+        self.savebtn = QtGui.QPushButton('Save Plot Data')
+        self.layout.addWidget(self.savebtn, 2,2,1,1)
+        self.resetbtn = QtGui.QPushButton('Reset plot')
+        self.layout.addWidget(self.resetbtn, 2,3,1,1)
 
         self.showhidelegends = QtGui.QPushButton("Show legend")
-        self.layout.addWidget(self.showhidelegends, 1,2,1,1)
-        self.resetbtn = QtGui.QPushButton('Reset plot')
-        self.layout.addWidget(self.resetbtn, 2,2,1,1)
+        self.layout.addWidget(self.showhidelegends, 2,6,1,1)
+        self.hideshowallbtn = QtGui.QPushButton("Hide All")
+        self.layout.addWidget(self.hideshowallbtn, 1,6,1,1)
 
         self.datapointlbl = QtGui.QLabel("Information\nDatapoint\nSelected")
         self.datapointlbl.setText("")
-        self.layout.addWidget(self.datapointlbl, 1,3,2,1)
+        self.layout.addWidget(self.datapointlbl, 1,4,2,1)
 
         self.graphlbl1 = QtGui.QLabel("Maximum value / from line:\n value / line")
         self.graphlbl1.setStyleSheet("font-size: 20pt")
         self.layout.addWidget(self.graphlbl1, 1,5,2,1)
 
+        self.plot1Dbtn = QtGui.QPushButton("1D layout")
+        self.plot2Dbtn = QtGui.QPushButton("2D layout")
+        self.plot3Dbtn = QtGui.QPushButton("3D layout")
+        self.layout.addWidget(self.plot1Dbtn, 1,1,1,1)
+        self.layout.addWidget(self.plot2Dbtn, 1,2,1,1)
+        self.layout.addWidget(self.plot3Dbtn, 1,3,1,1)
+
+
         self.setLayout(self.layout)
 
 if __name__ == '__main__':
+    import os, platform, sys, time, datetime, fnmatch, numexpr, math
+    import numpy as np
+    import pyqtgraph as pg
+    from functools import partial
+    import matplotlib.pyplot as plt
     try:
         ctrl_library = sys.argv[1]
         inp = sys.argv[2]
@@ -2012,9 +2421,17 @@ if __name__ == '__main__':
         import epics, requests, json
     elif ctrl_library == "Randomizer":
         import random
+    elif ctrl_library == "Finance":
+        from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+        from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
+        from pandas.plotting import register_matplotlib_converters
+        from pandas import DataFrame
+        import pandas_datareader as pdr
+    elif ctrl_library == "HistoricalData":
+        import pandas_datareader as pdr
     else:
         goflag = 0
     if goflag == 1:
         window = Dialog(inp,ctrl_library)
         window.show()
-        sys.exit(app.exec_())
+        sys.exit(app.exec_()) # Works for all
