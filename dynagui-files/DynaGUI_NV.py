@@ -592,7 +592,7 @@ class Dialog(QtGui.QWidget):
             attr = str(self.listofbpmattributeslistbox.currentText())
         scalars =[]
         for devs in self.TaurusList:
-            if self.ctrl_library == "EPICS":
+            if self.ctrl_library == "EPICS" or self.ctrl_library == "Finance":
                 TaurusList.append(str(devs))
             else:
                 TaurusList.append(str(devs)+"/"+attr)
@@ -607,6 +607,15 @@ class Dialog(QtGui.QWidget):
                 val = 0.
             elif self.ctrl_library == "EPICS":
                 val = epics.PV(devs, auto_monitor=True).value
+            elif self.ctrl_library == "Finance":
+                try:
+                    try:
+                        val = float(pdr.get_quote_yahoo(devs)['price'].values.tolist()[0])
+                    except:
+                        val = float(pdr.get_quote_yahoo(devs)['preMarketPrice'].values.tolist()[0])
+                except:
+                    print("failed to retreive data for "+devs)
+                    val = 0
             if hasattr(val, "__len__"):
                 scalars.append(1)
             else:
@@ -703,6 +712,29 @@ class Dialog(QtGui.QWidget):
                         os.system("atkpanel "+str(proxy) +"  &")
                     elif self.ctrl_library == "Randomizer":
                         QtGui.QMessageBox.information(self,"Control panel", "Random control panel is empty.")
+                    elif self.ctrl_library == "Finance":
+                        stock = item.text()
+                        data = pdr.get_quote_yahoo(item.text())
+                        list = [data.columns.values.tolist()] + data.values.tolist()
+                        datalist1 = ""
+                        datalist2 = ""
+                        minwidth = 0
+                        for n in range(len(list[0])):
+                            if str(list[0][n]) == "financialCurrency" or str(list[0][n]) == "longName" or str(list[0][n]) == "price":
+                                datalist1 = datalist1 + str(str(list[0][n])+" :  "+str(list[1][n])+"\n")
+                            else:
+                                datalist2 = datalist2 + str(str(list[0][n])+" :  "+str(list[1][n])+"\n")
+                        datalist = datalist1 + "\n- - - - - - - - - -\n" + datalist2
+                        msg = QtGui.QMessageBox(self)
+                        msg.setWindowTitle(str(stock)+" info")
+                        msg.setText(datalist)
+                        layout = msg.layout()
+                        item = layout.itemAtPosition(0, 1)
+                        widget = item.widget()
+                        widget.setFixedWidth(500)
+                        msg.show()
+                    elif self.ctrl_library == "EPICS":
+                        QtGui.QMessageBox.information(self,"Control panel", "EPICS device control and/or information panel is currently empty")
 
     def wildcardsImportClicked(self):
         wildGUI = wildcardsGUI(self)
@@ -740,9 +772,6 @@ class Dialog(QtGui.QWidget):
         elif self.ctrl_library == "Randomizer":
             self.listofbpmattributeslistbox.clear()
             self.listofbpmattributeslistbox.addItems(self.listofbpmattributes)
-        elif self.ctrl_library == "Finance":
-            self.listofbpmattributeslistbox.clear()
-            self.listofbpmattributeslistbox.addItems(self.listofbpmattributes)
 
         if self.reloadflag == 1:
             devlist = []
@@ -761,6 +790,11 @@ class Dialog(QtGui.QWidget):
                     if n not in devlist:
                         devlist.append(n)
                 self.PV_list = devlist
+            elif self.ctrl_library == "Finance":
+                for n in self.stocknames:
+                    if n not in devlist:
+                        devlist.append(n)
+                self.stocknames = devlist
             self.maxsize = 0
             self.killdynamicbuttongroup()
             self.getallDevs()
@@ -805,9 +839,7 @@ class listbtnGUI(QtGui.QDialog):
             self.textboxAttr = QtGui.QPlainTextEdit('\n'.join(parent.listofbpmattributes))
         elif self.parent.ctrl_library == "Finance":
             devslbl = QtGui.QLabel("List of devices:")
-            self.textboxDevs = QtGui.QPlainTextEdit('\n'.join(parent.devlist))
-            attrlbl = QtGui.QLabel("List of device attributes:")
-            self.textboxAttr = QtGui.QPlainTextEdit('\n'.join(parent.listofbpmattributes))
+            self.textboxDevs = QtGui.QPlainTextEdit('\n'.join(parent.stocknames))
         elif self.parent.ctrl_library == "EPICS":
             devslbl = QtGui.QLabel("List of Process Variables:")
             self.textboxDevs = QtGui.QPlainTextEdit('\n'.join(parent.PV_list))
@@ -821,8 +853,9 @@ class listbtnGUI(QtGui.QDialog):
         nobtn = QtGui.QPushButton('Cancel')
         listgui.addRow(devslbl)
         listgui.addRow(self.textboxDevs)
-        listgui.addRow(attrlbl)
-        listgui.addRow(self.textboxAttr)
+        if self.parent.ctrl_library != "Finance":
+            listgui.addRow(attrlbl)
+            listgui.addRow(self.textboxAttr)
         listgui.addRow(rowslbl,self.textboxRows)
         listgui.addRow(okbtn, nobtn)
         okbtn.clicked.connect(self.confirmfunc)
@@ -841,10 +874,6 @@ class listbtnGUI(QtGui.QDialog):
             self.newlistAtts = textAtts.split()
             self.parent.listofbpmattributes = self.newlistAtts
 
-            if self.parent.Nrows != self.textboxRows.value():
-                self.parent.Nrows = self.textboxRows.value()
-                self.parent.reloadflag = 1
-
         elif self.parent.ctrl_library == "Randomizer":
             if self.parent.devlist != self.newlistDevs:
                 self.parent.devlist = self.newlistDevs
@@ -856,10 +885,6 @@ class listbtnGUI(QtGui.QDialog):
             self.newlistAtts = textAtts.split()
             self.parent.listofbpmattributes = self.newlistAtts
 
-            if self.parent.Nrows != self.textboxRows.value():
-                self.parent.Nrows = self.textboxRows.value()
-                self.parent.reloadflag = 1
-
         elif self.parent.ctrl_library == "EPICS":
             if self.parent.PV_list != self.newlistDevs:
                 self.parent.PV_list = self.newlistDevs
@@ -869,9 +894,14 @@ class listbtnGUI(QtGui.QDialog):
             self.newlistAtts = textAtts.split()
             self.parent.PV_descriptions = self.newlistAtts
 
-            if self.parent.Nrows != self.textboxRows.value():
-                self.parent.Nrows = self.textboxRows.value()
+        elif self.parent.ctrl_library == "Finance":
+            if self.parent.stocknames != self.newlistDevs:
+                self.parent.stocknames = self.newlistDevs
                 self.parent.reloadflag = 1
+
+        if self.parent.Nrows != self.textboxRows.value():
+            self.parent.Nrows = self.textboxRows.value()
+            self.parent.reloadflag = 1
 
         self.close()
 
@@ -1245,6 +1275,16 @@ class Spectrogram(QtGui.QDialog):
                 val = random.random()
             elif self.ctrl_library == "EPICS":
                 val = epics.PV(inp, auto_monitor=True).value
+            elif self.ctrl_library == "Finance":
+                try:
+                    try:
+                        val = float(pdr.get_quote_yahoo(inp)['price'].values.tolist()[0])
+                    except:
+                        val = float(pdr.get_quote_yahoo(inp)['preMarketPrice'].values.tolist()[0])
+                except:
+                    print("Warning: Failed to retreive data for "+inp)
+                    val = 0
+
             y.append(str(val))
         self.plotarr[-1:] = y
         if str(self.plotvsstoredbtn.text()) == 'Plotting vs stored':
@@ -2218,7 +2258,6 @@ class PyQtGraphSetup(QtGui.QDialog):
         self.tab2.setLayout(self.tabgridL2)
 
     def equationChanged(self,index,equation):
-
         self.equations[index] = equation.text()
 
     def addnewline(self):

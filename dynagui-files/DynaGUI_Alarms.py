@@ -43,21 +43,69 @@ class Dialog(QtGui.QDialog):
                 loadflag = 0
         if loadflag == 0:
             # List of devices' server domains.
-            self.devdoms = ['r3-319l/dia/tco-01/temperature',
-                            'r3-319l/dia/tco-02/temperature',
-                            'r3-319l/dia/tco-03/temperature',
-                            'r1-101/dia/bpm-01/xmeanpossa']
-
-            self.devdesc = ['R3 319 TCO 01 temperature',
-                            'R3 319 TCO 02 temperature',
-                            'R3 319 TCO 03 temperature',
-                            'R1 101 BPM 01 x-pos']
-
-            self.devlims = [36,
-                            38,
-                            40,
-                            100]
-
+            if self.ctrl_library == "Tango":
+                self.devdoms = ['r3-319l/dia/tco-01/temperature',
+                                'r3-319l/dia/tco-02/temperature',
+                                'r3-319l/dia/tco-03/temperature',
+                                'r1-101/dia/bpm-01/xmeanpossa']
+                self.devdesc = ['R3 319 TCO 01 temperature',
+                                'R3 319 TCO 02 temperature',
+                                'R3 319 TCO 03 temperature',
+                                'R1 101 BPM 01 x-pos']
+                self.devlims = [36,
+                                38,
+                                40,
+                                100]
+            elif self.ctrl_library == "EPICS":
+                self.devdoms = ['LEBT-010:PBI-BCM-001:CurR',
+                                'RFQ-010:PBI-BCM-001:CurR',
+                                'MEBT-010:PBI-BCM-001:CurR',
+                                'MEBT-010:PBI-BPM-001:PosX',
+                                'MEBT-010:PBI-BPM-001:PosY']
+                self.devdesc = ['LEBT BCM 1 Current',
+                                'RFQ BCM 1 Current',
+                                'MEBT BCM 1 Current',
+                                'MEBT BPM 1 x-pos',
+                                'MEBT BPM 1 y-pos']
+                self.devlims = [76,
+                                75,
+                                74,
+                                22,
+                                12]
+            elif self.ctrl_library == "Finance":
+                self.devdoms = ['AAPL',
+                                'TSLA',
+                                'FB',
+                                'BAX',
+                                'AVGO',
+                                'UBER']
+                self.devdesc = ['Apple Inc.',
+                                'Tesla Inc.',
+                                'Facebook INC',
+                                'Baxter International Inc.',
+                                'Broadcom Inc.',
+                                'UBER Technologies Inc.']
+                self.devlims = [10,
+                                11,
+                                12,
+                                13,
+                                14]
+            elif self.ctrl_library == "Randomizer":
+                self.devdoms = ['Random Attribute 1',
+                                'Random Attribute 2',
+                                'Random Attribute 3',
+                                'Random Attribute 4',
+                                'Random Attribute 5']
+                self.devdesc = ['Random Attribute 1 description',
+                                'Random Attribute 2 description',
+                                'Random Attribute 3 description',
+                                'Random Attribute 4 description',
+                                'Random Attribute 5 description']
+                self.devlims = [10000,
+                                1,
+                                10,
+                                100,
+                                1000]
             self.Nrows = 20
         self.reloadflag = 0
         self.maxsize = 0
@@ -233,8 +281,12 @@ class Dialog(QtGui.QDialog):
                 self.devlims.append(0)
             textbox.setValidator(self.doublevalidator)
             combobox = QtGui.QComboBox(self.groupBox)
-            combobox.addItem("<")
-            combobox.addItem(">")
+            if self.ctrl_library == "Finance":
+                combobox.addItem(">")
+                combobox.addItem("<")
+            else:
+                combobox.addItem("<")
+                combobox.addItem(">")
 
             textbox.setEnabled(True)
             textbox.textChanged.connect(partial(self.lineeditedited,textbox))
@@ -292,16 +344,29 @@ class Dialog(QtGui.QDialog):
         combos = self.groupBox.findChildren(QtGui.QComboBox)
         alarmstring = 0
         for ind, item in enumerate(checkboxes):
-            splitt = str(item.toolTip()).split("/")
-            attr = splitt[len(splitt)-1]
-            proxy = str("/".join(splitt[0:len(splitt)-1]))
-
+            if self.ctrl_library == "Tango":
+                splitt = str(item.toolTip()).split("/")
+                attr = splitt[len(splitt)-1]
+                proxy = str("/".join(splitt[0:len(splitt)-1]))
+            elif self.ctrl_library == "Finance" or self.ctrl_library == "Randomizer" or self.ctrl_library == "EPICS":
+                proxy = item.toolTip()
             if self.ctrl_library == "Tango":
                 prox = [PT.DeviceProxy(str(proxy))]
                 for bd in prox:
                     val = bd.read_attribute(attr).value
+            elif self.ctrl_library == "EPICS":
+                val = epics.PV(devs, auto_monitor=True).value
             elif self.ctrl_library == "Randomizer":
                 val = random.random()
+            elif self.ctrl_library == "Finance":
+                try:
+                    try:
+                        val = float(pdr.get_quote_yahoo(proxy)['price'].values.tolist()[0])
+                    except:
+                        val = float(pdr.get_quote_yahoo(proxy)['preMarketPrice'].values.tolist()[0])
+                except:
+                    print("failed to retreive data for "+proxy)
+                    val = 0
             lorm = str(combos[ind].currentText())
             labels[ind].setText(str(val))
             if item.isChecked():
@@ -448,6 +513,8 @@ if __name__ == '__main__':
         goflag = 0
     elif ctrl_library == "Randomizer":
         import random
+    elif ctrl_library == "Finance":
+        import pandas_datareader as pdr
     else:
         goflag = 0
     if goflag == 1:
