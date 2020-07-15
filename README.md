@@ -18,8 +18,7 @@ The package has then evolved to have the ability to analyse data from any file c
 
 
 ## Screenshots
-
-DynaGUI Launcher.
+DynaGUI Launcher:
 <table>
     <tr>
         <td>
@@ -28,7 +27,7 @@ DynaGUI Launcher.
     </tr>
 </table>
 
-DynaGUI TF.
+DynaGUI TF:
 <table>
     <tr>
         <td>
@@ -37,7 +36,7 @@ DynaGUI TF.
     </tr>
 </table>
 
-DynaGUI NV and 1D plotting.
+DynaGUI NV and 1D plotting:
 <table>
     <tr>
         <td>
@@ -46,7 +45,7 @@ DynaGUI NV and 1D plotting.
     </tr>
 </table>
 
-DynaGUI NV 2D plotting.
+DynaGUI NV 2D plotting:
 <table>
     <tr>
         <td>
@@ -55,7 +54,7 @@ DynaGUI NV 2D plotting.
     </tr>
 </table>
 
-DynaGUI Alarms.
+DynaGUI Alarms:
 <table>
     <tr>
         <td>
@@ -63,4 +62,16 @@ DynaGUI Alarms.
         </td>
     </tr>
 </table>
+
+## User Guide
+The user guide contains more information on how to use the package, see [User Guide](UserGuide.pdf).
+
+## Dependencies
+The package depends on multiple Python packages depending on if it is to be used with Tango, EPICS, Finance, Random, or only historical data plotting and browsing.
+
+## History
+The package was initially developed in 2019 by Benjamin Bolling during his time as an Accelerator Operator at MAX IV Laboratory. It has since then evolved to its current state as it is today.
+
+## License
+This package is intended to be free and open-source. For more information, see [license](LICENSE.txt).
 
