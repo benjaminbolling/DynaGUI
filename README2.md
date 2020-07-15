@@ -30,6 +30,7 @@ Open Opportunities can benefit all organizations, but it’s especially useful f
         </td>
         <td>
             <img alt="open opps 3" src="docs/screenshots/open-opps-03.png">
+	    <em>image_caption</em>
         </td>
     </tr>
 </table>
