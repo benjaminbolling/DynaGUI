@@ -9,7 +9,7 @@ fnmatch
 numexpr
 math
 functools
-PyQt5 (recommended) or PyQt4 (minimum)
+PyQt5==5.13.1 or PyQt4==4.11.4
 pyqtgraph==0.10.0
 matplotlib==3.1.1
 
