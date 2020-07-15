@@ -1,0 +1,16 @@
+name: dynagui
+channels:
+  - conda-forge
+  - tango-controls
+  - nodefaults
+dependencies:
+  - python
+  - numpy
+  - numexpr
+  - pyqtgraph
+  - matplotlib
+  - pyqt
+  - pyepics
+  - pandas
+  - pandas-datareader
+  - pytango
