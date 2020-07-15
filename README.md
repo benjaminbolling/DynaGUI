@@ -26,7 +26,7 @@ The package has then evolved to have the ability to analyse data from any file c
         </td>
     </tr>
 </table>
-DynaGUI Launcher
+DynaGUI Launcher.
 <table>
     <tr>
         <td>
@@ -34,7 +34,7 @@ DynaGUI Launcher
         </td>
     </tr>
 </table>
-
+DynaGUI TF.
 <table>
     <tr>
         <td>
@@ -42,7 +42,7 @@ DynaGUI Launcher
         </td>
     </tr>
 </table>
-
+DynaGUI NV and 1D plotting.
 <table>
     <tr>
         <td>
@@ -50,7 +50,7 @@ DynaGUI Launcher
         </td>
     </tr>
 </table>
-
+DynaGUI NV 2D plotting.
 <table>
     <tr>
         <td>
@@ -58,3 +58,4 @@ DynaGUI Launcher
         </td>
     </tr>
 </table>
+DynaGUI Alarms.
