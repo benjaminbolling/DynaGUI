@@ -24,6 +24,7 @@ The package has then evolved to have the ability to analyse data from any file c
         <td>
             <img alt="DynaGUI Launcher" src="figure2.png">
         </td>
+	DynaGUI Launcher
     </tr>
 </table>
 <table>
