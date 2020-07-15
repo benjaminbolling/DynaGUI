@@ -391,6 +391,7 @@ class Dialog(QtGui.QDialog):
                             alarmstring = str(item.text())
                         else:
                             alarmstring = str(alarmstring + " [[slnc 200]] and [[slnc 200]] " + str(item.text()))
+                        item.setStyleSheet("background-color: red")
                     else:
                         if platform.system() == "Linux":
                             item.setStyleSheet("background-color: lime")
