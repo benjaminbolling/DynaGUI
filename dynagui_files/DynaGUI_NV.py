@@ -24,7 +24,8 @@ except:
     from PyQt4 import QtCore, QtGui
 
 class Dialog(QtGui.QWidget):
-    def __init__(self, inp, ctrl_library):
+    def __init__(self, ctrl_library, inp, parent=None):
+        super(Dialog, self).__init__(parent)
         QtGui.QDialog.__init__(self)
         self.setWindowTitle("DynaGUI NV - "+str(ctrl_library))
         self.ctrl_library = ctrl_library
@@ -318,7 +319,7 @@ class Dialog(QtGui.QWidget):
             rowcount += 1
             if self.ctrl_library == "Tango":
                 button = QtGui.QPushButton(str(self.devlist[n]), self.groupBox)
-            elif ctrl_library == "Randomizer":
+            elif self.ctrl_library == "Randomizer":
                 button = QtGui.QPushButton(str(self.devlist[n]), self.groupBox)
             elif self.ctrl_library == "EPICS":
                 button = QtGui.QPushButton(str(self.PV_descriptions[n]), self.groupBox)
@@ -2438,7 +2439,6 @@ class PyQtGraphContainerWidget(QtGui.QWidget):
         self.layout.addWidget(self.plot2Dbtn, 1,2,1,1)
         self.layout.addWidget(self.plot3Dbtn, 1,3,1,1)
 
-
         self.setLayout(self.layout)
 
 if __name__ == '__main__':
@@ -2471,6 +2471,6 @@ if __name__ == '__main__':
     else:
         goflag = 0
     if goflag == 1:
-        window = Dialog(inp,ctrl_library)
+        window = Dialog(ctrl_library,inp)
         window.show()
         sys.exit(app.exec_()) # Works for all

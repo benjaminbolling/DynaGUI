@@ -1,52 +1,23 @@
-####################################################################################################
+		- DynaGUI README -
 
-					   DynaGUI README
+DynaGUI stands for Dynamic Graphical User Interface and is a method to construct temporary, permanent and/or a set of GUI:s for users in a simple and fast manner. Developed during shift works at a particle accelerator, the initial goal was to fill in some functions that were then missing: Fast dynamic construction of new control system GUI:s for various purposes.
 
-####################################################################################################
+Different devices can have different attributes, depending on what type of device it is. For example, the Beam Position Monitors (BPM:s) of a particle accelerator reveal information about the transverse beam position whilst magnets' power supplies both reads and can set the current set-point of the magnet.
+   
+The BPM:s' device servers do, however, not only reveal information about the beam itself but also contain information of how their data should be treated, such as if they may generate an interlock (InterlockEnabled) or if they should have the Automatic Gain Control enabled or disabled. These signals are handled as true or false flags, meaning that a simple GUI can be constructed to read and also control the true or false-flags. This was the initial application in the package, which is the DynaGUI TF. For the case of having a GUI that reads numerical values, each device needs two fields: A field with the domain address for the device and another with the numerical value of the defined attribute, which resulted in the second application DynaGUI NV. 
 
-This document serves as a complement to the main by including instructions on:
+The third and last application in this package is the DynaGUI Alarms, which allows a user to set up a list of channels returning numerical values continuously and a second list of limit values (or conditions). This application sounds an alarm for the channel with a value not fulfilling the criteria and paints its description background red in the GUI.
 
-1. Pre-requirements
-2. Installation procedure
-3. How to use
-
-####################################################################################################
-
-					- Pre-requirements -
-
-Minimum requirements:
-	- Git	(https://www.atlassian.com/git/tutorials/install-git)
-	- Python (stability checked on version 3.7)
-	- Python packages
-		- numexpr		https://pypi.org/project/numexpr/
-		- numpy 		https://pypi.org/project/numpy/
-		- pyqtgraph		https://pypi.org/project/pyqtgraph/
-		- functools		https://pypi.org/project/functools/
-		- matplotlib		https://pypi.org/project/matplotlib/
-		- PyQt5 (or PyQt4)	https://pypi.org/project/PyQt5/
-
-For Tango control systems, the following Python package is required:
-	- PyTango		https://pypi.org/project/pytango/
-
-For EPICS (Experimental Physics and Industrial Control System):
-	- PyEpics		https://pypi.org/project/pyepics/
-	- Requests		https://pypi.org/project/requests/
-
-For the Finance analysis package:
-	- Pandas		https://pypi.org/project/pandas/
-	- Pandas Datareader	https://pypi.org/project/pandas-datareader/
-
-####################################################################################################
-
-				     - Installation procedure -
-
-1. Ensure that Git is installed on the computer, see https://www.atlassian.com/git/tutorials/install-git.
-2. Create a new folder on the computer called "DynaGUI".
-3. Open a terminal in the DynaGUI folder.
-4. Clone the package to the folder by executing the following command in the terminal:
-	git clone https://github.com/benjaminbolling/DynaGUI.git
-5. To run the application, execute the following command in a terminal in the DynaGUI folder:
-	python3.7 Launcher.py
+The package has then evolved to have the ability to analyse data from any file containing plot data and also live-streamed data from other sources, such as the stock market using Pandas. A random data value package has also been implemented for testing and demonstration purposes.
 
 
+## Screenshots
 
+<table>
+    <tr>
+        <td>
+            <img alt="DynaGUI NV" src="figure1.png">
+        </td>
+    </tr>
+    DynaGUI NV
+</table>

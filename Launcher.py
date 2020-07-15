@@ -23,6 +23,9 @@ try:
     import pyqtgraph as pg
     from functools import partial
     import matplotlib.pyplot as plt
+except:
+    packagefailure[0] = 1
+try:
     import PyQt5.QtWidgets as QtGui
     import PyQt5.QtGui as QtGui2
     from PyQt5 import QtCore
@@ -69,9 +72,12 @@ elif packagefailure[0] == 0:
         packagefailure[4] = 1
 
 class Dialog(QtGui.QWidget):
-    def __init__(self, packagefailure):
+    def __init__(self, packagefailure,parent=None):
+        super(Dialog, self).__init__(parent)
         QtGui.QDialog.__init__(self)
         self.setWindowTitle("DynaGUI")
+
+        self.dialogs = list()
 
         self.toplayout = QtGui.QVBoxLayout(self)
         self.toplayout.addStretch()
@@ -210,68 +216,68 @@ class Dialog(QtGui.QWidget):
     def viewdataNVclicked(self):
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
-        os.system("python3.7 "+dirpath+"/dynagui-files/DynaGUI_NV.py 'HistoricalData' "+fp+"&")
+        os.system("python3.7 "+dirpath+"/dynagui_files/DynaGUI_NV.py 'HistoricalData' "+fp+"&")
         self.close()
         print("View data NV clicked")
     def epicsNVclicked(self):
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
-        os.system("python3.7 "+dirpath+"/dynagui-files/DynaGUI_NV.py 'EPICS' "+fp+"&")
+        os.system("python3.7 "+dirpath+"/dynagui_files/DynaGUI_NV.py 'EPICS' "+fp+"&")
         self.close()
         print("EPICS NV clicked")
     def epicsTFclicked(self):
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
-        os.system("python3.7 "+dirpath+"/dynagui-files/DynaGUI_TF.py 'EPICS' "+fp+"&")
+        os.system("python3.7 "+dirpath+"/dynagui_files/DynaGUI_TF.py 'EPICS' "+fp+"&")
         print("EPICS TF clicked")
     def epicsAlarmsclicked(self):
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
-        os.system("python3.7 "+dirpath+"/dynagui-files/DynaGUI_Alarms.py 'EPICS' "+fp+"&")
+        os.system("python3.7 "+dirpath+"/dynagui_files/DynaGUI_Alarms.py 'EPICS' "+fp+"&")
         print("EPICS Alarms clicked")
     def tangoNVclicked(self):
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
-        os.system("python3.7 "+dirpath+"/dynagui-files/DynaGUI_NV.py 'Tango' "+fp+"&")
+        os.system("python3.7 "+dirpath+"/dynagui_files/DynaGUI_NV.py 'Tango' "+fp+"&")
         print("Tango NV clicked")
     def tangoTFclicked(self):
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
-        os.system("python3.7 "+dirpath+"/dynagui-files/DynaGUI_TF.py 'Tango' "+fp+"&")
+        os.system("python3.7 "+dirpath+"/dynagui_files/DynaGUI_TF.py 'Tango' "+fp+"&")
         print("Tango TF clicked")
     def tangoAlarmsclicked(self):
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
-        os.system("python3.7 "+dirpath+"/dynagui-files/DynaGUI_Alarms.py 'Tango' "+fp+"&")
+        os.system("python3.7 "+dirpath+"/dynagui_files/DynaGUI_Alarms.py 'Tango' "+fp+"&")
         print("Tango Alarms clicked")
     def financeNVclicked(self):
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
-        os.system("python3.7 "+dirpath+"/dynagui-files/DynaGUI_NV.py 'Finance' "+fp+"&")
+        os.system("python3.7 "+dirpath+"/dynagui_files/DynaGUI_NV.py 'Finance' "+fp+"&")
         print("Finance NV clicked")
     def financeAlarmsclicked(self):
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
-        os.system("python3.7 "+dirpath+"/dynagui-files/DynaGUI_Alarms.py 'Finance' "+fp+"&")
+        os.system("python3.7 "+dirpath+"/dynagui_files/DynaGUI_Alarms.py 'Finance' "+fp+"&")
         print("Finance Alarms clicked")
     def randomNVclicked(self):
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
-        os.system("python3.7 "+dirpath+"/dynagui-files/DynaGUI_NV.py 'Randomizer' "+fp+"&")
+        os.system("python3.7 "+dirpath+"/dynagui_files/DynaGUI_NV.py 'Randomizer' "+fp+"&")
         print("Random NV clicked")
     def randomTFclicked(self):
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
-        os.system("python3.7 "+dirpath+"/dynagui-files/DynaGUI_TF.py 'Randomizer' "+fp+"&")
+        os.system("python3.7 "+dirpath+"/dynagui_files/DynaGUI_TF.py 'Randomizer' "+fp+"&")
         print("Random TF clicked")
     def randomAlarmsclicked(self):
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
-        os.system("python3.7 "+dirpath+"/dynagui-files/DynaGUI_Alarms.py 'Randomizer' "+fp+"&")
+        os.system("python3.7 "+dirpath+"/dynagui_files/DynaGUI_Alarms.py 'Randomizer' "+fp+"&")
         print("Random Alarms clicked")
     def browseFilesClicked(self):
         dirpath = os.path.abspath(os.path.dirname(__file__))
-        nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File', dirpath+'/dynagui-files/ConfFiles')
+        nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File', dirpath+'/dynagui_files/ConfFiles')
         if len(nameoffile) > 1:
             nameoffile = str(nameoffile[0])
         self.conffilepath.setText(nameoffile)
