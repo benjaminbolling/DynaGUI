@@ -1,0 +1,27 @@
+numpy
+random
+os
+platform
+sys
+time
+datetime
+fnmatch
+numexpr
+math
+functools
+PyQt5 (recommended) or PyQt4 (minimum)
+pyqtgraph==0.10.0
+matplotlib==3.1.1
+
+
+For EPICS:
+pyepics==3.4.0
+requests==2.22.0
+jsonschema==3.1.1
+
+For Finance:
+pandas==0.25.3
+pandas-datareader==0.8.1
+
+For Tango:
+PyTango==9.3.2
