@@ -90,6 +90,9 @@ The package depends on multiple Python packages depending on if it is to be used
 ## History
 The package was initially developed in 2019 by Benjamin Bolling during his time as an Accelerator Operator at MAX IV Laboratory. It has since then evolved to its current state as it is today.
 
+## Comparison to other packages
+Many graphical user interface (GUI) toolkits exists for building GUI:s with the Python language, e.g. PyQt, Tkinter and wxPython. All three packages, however, requires that the user does now coding and has time to build a GUI. With the idea of this package being its openness and fast-paced construction for GUI:s, a similar package would be PyGTK which, however, requires a little amount of programming. The author is presently unaware of any Python-based dynamic GUI construction package.
+
 ## License
 This package is intended to be free and open-source. For more information, see [license](LICENSE.txt).
 
