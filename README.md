@@ -73,6 +73,14 @@ DynaGUI Alarms:
     </tr>
 </table>
 
+## Installation procedure
+1. In order to setup this package, ensure that Python 3.x (3.7 is recommended) is installed on the computer.
+2. Check Python version used with the PIP package manager such that it points to the correct Python version (pip -V).
+3. Use PIP to install all packages required, see [requirements](requirements.txt).
+4. If all required Python packages have been successfully installed, the package is ready.
+
+To launch the package, browse to the package's destination in a terminal and execute | python Launcher.py | to launch DynaGUI.
+
 ## User Guide
 The user guide contains more information on how to use the package, see [User Guide](UserGuide.pdf).
 
