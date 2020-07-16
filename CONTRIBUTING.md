@@ -1,5 +1,5 @@
 # Welcome!
-Thank you for considering contributing to this open source project. To do a contribution, please follow the following steps:
+Thank you for using and/or considering contributing to this open source project. To do a contribution, please follow the following steps:
 
 1. Create your own branch and develop the code and your contribution.
 2. If your contribution is useful for the community, proceed with a merge request to the master (community) branch.
