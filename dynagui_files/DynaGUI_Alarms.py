@@ -190,7 +190,7 @@ class Dialog(QtGui.QDialog):
             item.setChecked(False)
 
     def savebtnclicked(self):
-        nameoffile = QtGui.QFileDialog.getSaveFileName(self, 'Save to File')
+        nameoffile = QtGui.QFileDialog.getSaveFileName(self, 'Save to File', "", "DynaGUI Alarms file (*.dg3)")[0]
         if not nameoffile:
             self.bottomlabel.setText("Cancelled save configuration.")
         else:
@@ -202,7 +202,7 @@ class Dialog(QtGui.QDialog):
             self.bottomlabel.setToolTip("Saved configuation to file: "+nameoffile)
 
     def loadbtnclicked(self):
-        nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File')
+        nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File', "", "DynaGUI Alarms file (*.dg3)")[0]
         if not nameoffile:
             self.bottomlabel.setText("Cancelled loading configuration.")
         else:
@@ -370,6 +370,10 @@ class Dialog(QtGui.QDialog):
             lorm = str(combos[ind].currentText())
             labels[ind].setText(str(val))
             if item.isChecked():
+                print(val)
+                print(lorm)
+                print(float(lineedits[ind].text()))
+                print(float(lineedits[ind].text()) > val)
                 if lorm == "<":
                     if val > float(lineedits[ind].text()):
                         if alarmstring == 0:
@@ -384,7 +388,6 @@ class Dialog(QtGui.QDialog):
                             item.setStyleSheet("background-color: green")
                         else:
                             item.setStyleSheet('background-color: lime')
-
                 elif lorm == ">":
                     if val < float(lineedits[ind].text()):
                         if alarmstring == 0:
@@ -399,6 +402,8 @@ class Dialog(QtGui.QDialog):
                             item.setStyleSheet("background-color: green")
                         else:
                             item.setStyleSheet('background-color: lime')
+            else:
+                item.setStyleSheet('background-color: grey')
         if alarmstring == 0:
             self.bottomlabel.setText("All clear.")
             self.alarmflag = 0
@@ -471,10 +476,13 @@ class listbtnGUI(QtGui.QDialog):
     def confirmfunc(self):
         textDevs = str(self.textboxDevs.toPlainText())
         textDescs = str(self.textboxDesc.toPlainText())
-        self.newlistDevs = textDevs.split()
+        self.newlistDevs = textDevs.split('\n')
         self.newlistDescs = textDescs.split('\n')
 
         # Check if all devices have domain, description and limits defined:
+        print(len(self.newlistDevs)-len(self.newlistDescs))
+        print(self.newlistDevs)
+        print(self.newlistDescs)
         if abs(len(self.newlistDevs)-len(self.newlistDescs)) == 0:
             self.parent.timerinterval = self.textboxTmr.value()
             if self.parent.devdoms != self.newlistDevs or self.parent.devdesc != self.newlistDescs:
@@ -488,9 +496,9 @@ class listbtnGUI(QtGui.QDialog):
             self.close()
         else:
             if platform.system() == "Linux":
-                os.system('spd-say "NO NO NO"')
+                os.system('spd-say "Error"')
             elif platform.system() == "Darwin":
-                os.system("say -v 'karen' NO NO NO")
+                os.system("say -v 'karen' Error")
             elif platform.system() == "Windows":
                 print("Windows")
             QtGui.QMessageBox.warning(self,"Error","Number of domains and descriptions must be the same.")

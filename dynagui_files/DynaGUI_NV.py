@@ -66,7 +66,7 @@ class Dialog(QtGui.QWidget):
                                         #'LEBT_Sol-01_Current',
                                         #'LEBT_Sol-02_Current'
                                         ]
-            elif ctrl_library == "Finance":
+            elif self.ctrl_library == "Finance":
                 self.stocknames = ['AAPL',
                                    'TSLA',
                                    'FB',
@@ -200,7 +200,7 @@ class Dialog(QtGui.QWidget):
 
     def savebtnclicked(self):
         # To save the configuration
-        yesorno, nameoffile = QtGui.QFileDialog.getSaveFileName(self, 'Save to File')
+        nameoffile = QtGui.QFileDialog.getSaveFileName(self, 'Save to File', "", "DynaGUI NV file (*.dg2)")[0]
         if not nameoffile:
             self.bottomlabel.setText("Cancelled save configuration.")
         else:
@@ -222,7 +222,7 @@ class Dialog(QtGui.QWidget):
 
     def loadbtnclicked(self):
         # File loading initialization
-        nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File')
+        nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File')[0]
         if not nameoffile:
             self.bottomlabel.setText("Cancelled loading configuration.")
         else:
@@ -620,7 +620,6 @@ class Dialog(QtGui.QWidget):
             if hasattr(val, "__len__"):
                 scalars.append(1)
             else:
-                print("scalar")
                 scalars.append(0)
         if sum(scalars) == 0:
             self.scalarflag = 1 # it is a scalar
@@ -1318,6 +1317,8 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             self.archivemode = 1
         self.contWidget.loadbtn.clicked.connect(self.loadclick)
         self.contWidget.savebtn.clicked.connect(self.saveclick)
+        self.contWidget.loadbtn.setEnabled(False)
+        self.contWidget.savebtn.setEnabled(False)
         self.contWidget.plotsettingsbtn.clicked.connect(self.PlotSettings)
         self.contWidget.showhidelegends.clicked.connect(self.showhidelegend)
         self.contWidget.resetbtn.clicked.connect(self.reset)
@@ -1761,7 +1762,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             self.contWidget.plotbtn.setText('Start Plotting')
             self.pyqtgraphtimer.stop()
             if str(item) == 'From File':
-                nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File')
+                nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File', "", "Plot files (*.dgplot)")[0]
                 if any(map(lambda x: any(x), nameoffile)):
                     if isinstance(nameoffile, tuple):
                         nameoffile = str(nameoffile[0])
@@ -1995,10 +1996,9 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
     def saveclick(self):
         options = QtGui.QFileDialog.Options()
         options |= QtGui.QFileDialog.DontUseNativeDialog
-        fileName = QtGui.QFileDialog.getSaveFileName(self,"QtGui.QFileDialog.getSaveFileName()","","All Files (*);;Text Files (*.txt)", options=options)
+        fileName = QtGui.QFileDialog.getSaveFileName(self, 'Save to File',"","DynaGUI plot files (*.dgplot)", options=options)[0]
         if any(map(lambda x: any(x), fileName)):
-            if isinstance(fileName, tuple):
-                fileName = str(fileName[0])
+            print(fileName)
             file0 = open(fileName, 'w')
             self.toSave = str(self.data_y0)
             self.toSave = str('Date and time for save: '+str(datetime.datetime.now())+'. '+"Ylabel: "+self.ylabel+'. Plotting frequency: '+str(self.updateFrequency) + 'Hz. Plotting time range: -'+str(self.minutes*60)+'-0 s.'+'\n\n'+'x [s] = '+str(self.data_x)+'\n'+'y = '+str(self.data_y))
@@ -2009,12 +2009,16 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
         self.archivemode = 0
         if self.contWidget.plotbtn.text() == 'Start Plotting':
             self.contWidget.plotbtn.setText('Stop Plotting')
+            self.contWidget.plotsettingsbtn.setEnabled(False)
+            # self.contWidget.loadbtn.setEnabled(False)
             self.pyqtgraphtimer.start(int(1000/self.updateFrequency))
             self.contWidget.plot.setXRange(-60 * 1.01 * self.minutes,0)
             if self.time_0 == -1:
                 self.time_0 = time.time()
         elif self.contWidget.plotbtn.text() == 'Stop Plotting':
             self.contWidget.plotbtn.setText('Start Plotting')
+            self.contWidget.plotsettingsbtn.setEnabled(True)
+            # self.contWidget.loadbtn.setEnabled(True)
             self.pyqtgraphtimer.stop()
 
     def closeEvent(self, event):
@@ -2144,6 +2148,7 @@ class PyQtGraphSetup(QtGui.QDialog):
         helpbutton = QtGui.QPushButton("Help")
         equationslbl = QtGui.QPushButton("Pre-defined mathematical functions")
         equationsedit = QtGui.QPushButton("Edit user-defined mathematical functions")
+        equationsedit.setEnabled(False)
         okbtn = QtGui.QPushButton('Ok')
         nobtn = QtGui.QPushButton('Cancel')
         addLineBtn = QtGui.QPushButton("Add New Line")
@@ -2435,6 +2440,9 @@ class PyQtGraphContainerWidget(QtGui.QWidget):
         self.plot1Dbtn = QtGui.QPushButton("1D layout")
         self.plot2Dbtn = QtGui.QPushButton("2D layout")
         self.plot3Dbtn = QtGui.QPushButton("3D layout")
+        self.plot1Dbtn.setEnabled(False)
+        self.plot2Dbtn.setEnabled(False)
+        self.plot3Dbtn.setEnabled(False)
         self.layout.addWidget(self.plot1Dbtn, 1,1,1,1)
         self.layout.addWidget(self.plot2Dbtn, 1,2,1,1)
         self.layout.addWidget(self.plot3Dbtn, 1,3,1,1)

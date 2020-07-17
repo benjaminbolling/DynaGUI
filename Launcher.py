@@ -121,6 +121,9 @@ class Dialog(QtGui.QWidget):
         if packagefailure[0] == 1:
             self.viewdataNV.setEnabled(False)
             self.viewdataNV.setToolTip("Import of required general Python packages failed.")
+        else:
+            self.viewdataNV.setEnabled(False)
+            self.viewdataNV.setToolTip("Not yet ready, is to be developed soon.")
         self.viewdataTF.setEnabled(False)
         self.viewdataTF.setToolTip("Not applicable.")
         self.viewdataAlarms.setEnabled(False)

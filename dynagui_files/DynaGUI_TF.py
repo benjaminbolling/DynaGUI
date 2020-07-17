@@ -131,7 +131,7 @@ class Dialog(QtGui.QDialog):
         self.getallDevs()
 
     def savebtnclicked(self):
-        nameoffile = QtGui.QFileDialog.getSaveFileName(self, 'Save to File')[0]
+        nameoffile = QtGui.QFileDialog.getSaveFileName(self, 'Save to File', "", "DynaGUI TF files (*.dg1)")[0]
         if not nameoffile:
             self.bottomlabel.setText("Cancelled save configuration.")
         else:
@@ -143,7 +143,7 @@ class Dialog(QtGui.QDialog):
             self.bottomlabel.setToolTip("Saved configuation to file: "+nameoffile)
 
     def loadbtnclicked(self):
-        nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File')[0]
+        nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File', "", "DynaGUI TF files (*.dg1)")[0]
         if not nameoffile:
             self.bottomlabel.setText("Cancelled loading configuration.")
         else:
