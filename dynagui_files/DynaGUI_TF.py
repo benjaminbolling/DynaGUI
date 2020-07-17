@@ -131,7 +131,7 @@ class Dialog(QtGui.QDialog):
         self.getallDevs()
 
     def savebtnclicked(self):
-        nameoffile = QtGui.QFileDialog.getSaveFileName(self, 'Save to File')
+        nameoffile = QtGui.QFileDialog.getSaveFileName(self, 'Save to File')[0]
         if not nameoffile:
             self.bottomlabel.setText("Cancelled save configuration.")
         else:
@@ -143,7 +143,7 @@ class Dialog(QtGui.QDialog):
             self.bottomlabel.setToolTip("Saved configuation to file: "+nameoffile)
 
     def loadbtnclicked(self):
-        nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File')
+        nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File')[0]
         if not nameoffile:
             self.bottomlabel.setText("Cancelled loading configuration.")
         else:
@@ -217,6 +217,8 @@ class Dialog(QtGui.QDialog):
             item = self.sublayout.itemAt(i)
             if isinstance(item, QtGui.QWidgetItem):
                 item.widget().close()
+        for button in self.groupBox.findChildren(QtGui.QPushButton):
+            button.deleteLater()
 
     def getallDevs(self):
         # Construct all necessary buttons
@@ -224,6 +226,10 @@ class Dialog(QtGui.QDialog):
 
         rowcount = -1
         colcount = 0
+
+        self.devstat = []
+        for m in range(len(self.devlist)):
+            self.devstat.append(1)
 
         # Here the construction begins for all the pushbuttons, and we make them all belong to the groupbox.
         for index in self.BPMproxies:
@@ -271,6 +277,8 @@ class Dialog(QtGui.QDialog):
                         item.setStyleSheet('background-color: fuchsia')
                 elif ctrl_library == "Randomizer":
                     n += 1
+                    print(n)
+                    print(self.devstat)
                     if self.devstat[n] == 1:
                         if platform.system() == "Linux":
                             item.setStyleSheet('background-color: lime')
