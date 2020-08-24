@@ -2,6 +2,7 @@ name: dynagui
 channels:
   - conda-forge
   - defaults
+  - tango-controls
   - anaconda
 dependencies:
 # Core dependencies for dynagui
@@ -20,3 +21,5 @@ dependencies:
   - pandas-datareader==0.8.1
   - pip:
     - PyQt5==5.13.1
+    - pytango==9.3.2
+    - boost-py==0.0.2

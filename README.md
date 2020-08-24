@@ -3,7 +3,7 @@
 DynaGUI stands for Dynamic Graphical User Interface and is a method to construct temporary, permanent and/or a set of GUI:s for users in a simple and fast manner. Developed during shift works at a particle accelerator, the initial goal was to fill in some functions that were then missing: Fast dynamic construction of new control system GUI:s for various purposes.
 
 Different devices can have different attributes, depending on what type of device it is. For example, the Beam Position Monitors (BPM:s) of a particle accelerator reveal information about the transverse beam position whilst magnets' power supplies both reads and can set the current set-point of the magnet.
-   
+
 The BPM:s' device servers do, however, not only reveal information about the beam itself but also contain information of how their data should be treated, such as if they may generate an interlock (InterlockEnabled) or if they should have the Automatic Gain Control enabled or disabled. These signals are handled as true or false flags, meaning that a simple GUI can be constructed to read and also control the true or false-flags. This was the initial application in the package, which is the DynaGUI TF. For simplicity reasons, their states are revealed by their colour:
 True = Green
 False = Red
@@ -74,9 +74,17 @@ DynaGUI Alarms:
 </table>
 
 ## Installation procedure
+In order to use the PyTango package, the TANGO Controls has to be installed, then follow steps b. TANGO Controls can be obtained from https://www.tango-controls.org/downloads/.
+
+If TANGO is not required by the end user, see steps a.
+
 1. In order to setup this package, ensure that Python 3.x (3.7 is recommended) is installed on the computer.
+   b)
 2. Check Python version used with the PIP package manager such that it points to the correct Python version (pip -V).
-3. Use PIP to install all packages required, see [requirements](requirements.txt).
+3. a) Use PIP to install all packages required, see [requirements](requirements.yml), or use conda to create an environment:
+    conda env create --file environments.yml
+   b) Use PIP to install all packages required, see [requirements](requirements_tango.yml), or use conda to create an environment:
+    conda env create --file environments_tango.yml
 4. If all required Python packages have been successfully installed, the package is ready.
 
 To launch the package, browse to the package's destination in a terminal and execute | python Launcher.py | to launch DynaGUI.
@@ -95,4 +103,3 @@ Many graphical user interface (GUI) toolkits exists for building GUI:s with the 
 
 ## License
 This package is intended to be free and open-source. For more information, see [license](LICENSE.txt).
-
