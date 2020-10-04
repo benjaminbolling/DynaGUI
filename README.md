@@ -38,8 +38,8 @@ To launch the package, browse to the package's destination in a terminal and exe
 ## User Guide
 The user guide contains more information on how to use the package, see [User Guide](UserGuide.pdf).
 
-## Example usages
-Example usages include multiple scenarios for simple financial analysis or at research and industrial complexes where a control system is used that can be incorporated within Python. We will address some case studies below for the different applications in this package.
+## Package Motivation
+Package usages include multiple scenarios for simple financial analysis or at research and industrial complexes where a control system is used that can be incorporated within Python. We will address some case studies below for the different applications in this package.
 
 The first package built was DynaGUI TF (TF = True/False) for the Tango control system with the goal to give the user a quick overview of user-defined devices' statuses of various boolean value attributes by giving each device their own button. Using colour coding for each devices' state, DynaGUI TF offers a time-efficient method for checking multiple devices' attribute states. DynaGUI TF was used a lot to check e.g. BPM statuses (e.g. is interlock enabled for them and is automatic gain control enabled). Whether they should be true or false can change over time, and therefore, it was important to check and ensure that all had proper states set.
 
