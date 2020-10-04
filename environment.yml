@@ -4,6 +4,8 @@ channels:
   - nodefaults
 dependencies:
   - python
+  - boost-py
+  - epics-base
   - jsonschema
   - matplotlib
   - numexpr
