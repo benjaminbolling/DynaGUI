@@ -1,11 +1,9 @@
 name: dynagui
 channels:
   - conda-forge
-  - epics-controls
   - nodefaults
 dependencies:
   - python
-  - functools
   - jsonschema
   - matplotlib
   - numexpr
@@ -15,6 +13,4 @@ dependencies:
   - pyepics
   - pyqt
   - pyqtgraph
-  - random
   - requests
-  - subprocess

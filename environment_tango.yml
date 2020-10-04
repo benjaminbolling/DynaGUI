@@ -1,8 +1,6 @@
 name: dynagui
 channels:
   - conda-forge
-  - tango-controls
-  - epics-controls
   - nodefaults
 dependencies:
   - python
