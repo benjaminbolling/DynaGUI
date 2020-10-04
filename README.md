@@ -27,6 +27,31 @@ By using DynaGUI NV, the need for an alarm if a numerical value surpasses some l
 
 As a future development to test the openness of DynaGUI NV and DynaGUI alarms, a "Finance" package was added to them to monitor stock prices: DynaGUI NV which monitors stock prices in a 1D plot with the ability for users to add functions that are applied to realtime stock price data, whilst DynaGUI Alarms sounds an alarm if a stock price becomes higher or lower than a user-defined limit.
 
+## Installation procedure
+In order to use the PyTango package, the TANGO Controls has to be installed, then follow steps b. TANGO Controls can be obtained from https://www.tango-controls.org/downloads/.
+
+If TANGO is not required by the end user, see steps a.
+
+1. In order to setup this package, ensure that Python 3.x (3.7 is recommended) is installed on the computer.
+2. Check Python version used with the PIP package manager such that it points to the correct Python version (pip -V).
+3. a) Use PIP to install all packages required, see [requirements](requirements.yml), or use conda to create the environment:
+
+    conda env create --file environments.yml
+
+   b) Use PIP to install all packages required, see [requirements with PyTango](requirements_tango.yml), or use conda to create the environment:
+
+    conda env create --file environments_tango.yml
+
+4. If all required Python packages have been successfully installed, the package is ready.
+
+To launch the package, browse to the package's destination in a terminal and execute | python Launcher.py | to launch DynaGUI.
+
+## User Guide
+The user guide contains more information on how to use the package, see [User Guide](UserGuide.pdf).
+
+## Dependencies
+The package depends on multiple Python packages depending on if it is to be used with Tango, EPICS, Finance, Random, or only historical data plotting and browsing.
+
 ## Screenshots
 DynaGUI Launcher:
 <table>
@@ -72,31 +97,6 @@ DynaGUI Alarms:
         </td>
     </tr>
 </table>
-
-## Installation procedure
-In order to use the PyTango package, the TANGO Controls has to be installed, then follow steps b. TANGO Controls can be obtained from https://www.tango-controls.org/downloads/.
-
-If TANGO is not required by the end user, see steps a.
-
-1. In order to setup this package, ensure that Python 3.x (3.7 is recommended) is installed on the computer.
-2. Check Python version used with the PIP package manager such that it points to the correct Python version (pip -V).
-3. a) Use PIP to install all packages required, see [requirements](requirements.yml), or use conda to create the environment:
-
-    conda env create --file environments.yml
-
-   b) Use PIP to install all packages required, see [requirements with PyTango](requirements_tango.yml), or use conda to create the environment:
-
-    conda env create --file environments_tango.yml
-
-4. If all required Python packages have been successfully installed, the package is ready.
-
-To launch the package, browse to the package's destination in a terminal and execute | python Launcher.py | to launch DynaGUI.
-
-## User Guide
-The user guide contains more information on how to use the package, see [User Guide](UserGuide.pdf).
-
-## Dependencies
-The package depends on multiple Python packages depending on if it is to be used with Tango, EPICS, Finance, Random, or only historical data plotting and browsing.
 
 ## History
 The package was initially developed in 2019 by Benjamin Bolling during his time as an Accelerator Operator at MAX IV Laboratory. It has since then evolved to its current state as it is today.
