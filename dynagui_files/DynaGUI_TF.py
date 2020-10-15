@@ -39,28 +39,15 @@ class Dialog(QtGui.QDialog):
                 loadflag = 0
         if loadflag == 0:
             # All device attributes needed (basically which can be TRUE or False)
-            self.listofbpmattributes = ['AGCEnabled',
-                                   'ADCEnabled',
-                                   'EnableADC',
-                                   'InterlockEnabled',
-                                   'Interlock_Enabled',
-                                   'Attribute1',
+            self.listofattributes = ['Attribute1',
                                    'Attribute2',
-                                   'Attribute3',
-                                   'StatusOpen',
-                                   'StatusClosed',
-                                   'OutputOn']
+                                   'Attribute3']
 
-            # Some list of devices. List 3 consists of some random stuff
-            self.devlist = ['r1-101/dia/bpm-02',
-                     'i-s01b/dia/bpl-01',
-                     'i-s04b/dia/bpl-01',
-                     'r3-301l/dia/bpm-01',
-                     'i-s19b/dia/bpl-01',
-                     'r1-109/dia/bpm-03',
-                     'i-s01a/vac/vgmb-01',
-                     'i-s03a/vac/vgmb-01',
-                     'r3-a110711cab08/mag/pspi-02']
+            # Some list of devices
+            self.devlist = ['section1/discipline1/device1',
+                            'section1/discipline1/device2',
+                            'section3/discipline1/device1',
+                            'section3/discipline2/device1']
             self.Nrows = 20
         self.reloadflag = 0
         self.showallhideflag = False
@@ -75,10 +62,10 @@ class Dialog(QtGui.QDialog):
         self.toplayout.addStretch()
 
         # Construct the combobox for the list of attributes
-        self.listofbpmattributeslistbox = QtGui.QComboBox(self)
-        self.listofbpmattributeslistbox.addItems(self.listofbpmattributes)
-        self.listofbpmattributeslistbox.currentIndexChanged.connect(self.statuscheck)
-        self.toplayout.addWidget(self.listofbpmattributeslistbox)
+        self.listofattributeslistbox = QtGui.QComboBox(self)
+        self.listofattributeslistbox.addItems(self.listofattributes)
+        self.listofattributeslistbox.currentIndexChanged.connect(self.statuscheck)
+        self.toplayout.addWidget(self.listofattributeslistbox)
 
         # Here we add a button that sets the selected attribute as TRUE for all the BPM:s in the selected ring
         self.enableallbutton = QtGui.QPushButton("Enable all")
@@ -136,7 +123,7 @@ class Dialog(QtGui.QDialog):
             self.bottomlabel.setText("Cancelled save configuration.")
         else:
             file = open(nameoffile, 'w')
-            self.toSave = str('IamaDynaGUIfile' + '\n' + "##IamYourSeparator##\n" + '\n'.join(self.devlist) + '\n' + "##IamYourSeparator##\n" + '\n'.join(self.listofbpmattributes) + '\n' + "##IamYourSeparator##\n" + str(self.Nrows))
+            self.toSave = str('IamaDynaGUIfile' + '\n' + "##IamYourSeparator##\n" + '\n'.join(self.devlist) + '\n' + "##IamYourSeparator##\n" + '\n'.join(self.listofattributes) + '\n' + "##IamYourSeparator##\n" + str(self.Nrows))
             file.write(self.toSave)
             file.close()
             self.bottomlabel.setText("Configuration saved to file.")
@@ -163,17 +150,17 @@ class Dialog(QtGui.QDialog):
                     devlist = splitToLoad[1].split("\n")
                     while("" in devlist): # Get rid of empty strings
                         devlist.remove("")
-                    listofbpmattributes = splitToLoad[2].split("\n")
-                    while("" in listofbpmattributes): # Get rid of empty strings
-                        listofbpmattributes.remove("")
+                    listofattributes = splitToLoad[2].split("\n")
+                    while("" in listofattributes): # Get rid of empty strings
+                        listofattributes.remove("")
                     Nrows = splitToLoad[3].split("\n")[1]
                     self.devlist = devlist
-                    self.listofbpmattributes = listofbpmattributes
+                    self.listofattributes = listofattributes
                     self.Nrows = float(Nrows)
                     # Destroy the current buttons.
                     if inp2 == 0:
-                        self.listofbpmattributeslistbox.clear()
-                        self.listofbpmattributeslistbox.addItems(self.listofbpmattributes)
+                        self.listofattributeslistbox.clear()
+                        self.listofattributeslistbox.addItems(self.listofattributes)
                         self.bottomlabel.setText("Loaded configuration.")
                         self.killdynamicbuttongroup()
                         self.resize(10,10)
@@ -200,10 +187,10 @@ class Dialog(QtGui.QDialog):
                 # Get the states of all devices, one at a time (val)
                 for dev in prox:
                     try:
-                        val = dev.read_attribute(str(self.listofbpmattributeslistbox.currentText())).value
+                        val = dev.read_attribute(str(self.listofattributeslistbox.currentText())).value
                         # Try to write to the device
                         if val is False: # If false, interlock is disabled.
-                            dev.write_attribute(str(self.listofbpmattributeslistbox.currentText()),True)
+                            dev.write_attribute(str(self.listofattributeslistbox.currentText()),True)
                     except:
                         item.setStyleSheet('background-color: fuchsia')
             elif ctrl_library == "Randomizer":
@@ -212,7 +199,7 @@ class Dialog(QtGui.QDialog):
 
     def killdynamicbuttongroup(self):
         # Destroy / kill all buttons currently constructed in the buttongroup.
-        self.bottomlabel.setText(str("Loading " + str(self.listofbpmattributeslistbox.currentText()) + " statuses..."))
+        self.bottomlabel.setText(str("Loading " + str(self.listofattributeslistbox.currentText()) + " statuses..."))
         for i in reversed(range(self.sublayout.count())):
             item = self.sublayout.itemAt(i)
             if isinstance(item, QtGui.QWidgetItem):
@@ -263,7 +250,7 @@ class Dialog(QtGui.QDialog):
                     prox = [PT.DeviceProxy(str(proxy))]
                     try:
                         for bd in prox:
-                            val = bd.read_attribute(str(self.listofbpmattributeslistbox.currentText())).value
+                            val = bd.read_attribute(str(self.listofattributeslistbox.currentText())).value
                             if val is True:
                                 if platform.system() == "Linux":
                                     item.setStyleSheet('background-color: lime')
@@ -290,7 +277,7 @@ class Dialog(QtGui.QDialog):
                         item.setStyleSheet('background-color: red')
             except:
                 item.setStyleSheet('QPushButton {background-color: maroon; color: white}')
-        self.bottomlabel.setText(str(str(self.listofbpmattributeslistbox.currentText()) + " statuses loaded."))
+        self.bottomlabel.setText(str(str(self.listofattributeslistbox.currentText()) + " statuses loaded."))
 
     def handleButtonClicked(self,button):
         if ctrl_library == "Randomizer":
@@ -304,13 +291,13 @@ class Dialog(QtGui.QDialog):
                     prox=[PT.DeviceProxy(str(proxy))]
                     for dev in prox:
                         try:
-                            val = dev.read_attribute(str(self.listofbpmattributeslistbox.currentText())).value
+                            val = dev.read_attribute(str(self.listofattributeslistbox.currentText())).value
                             if val is True: # If true --> Interlock is enabled.
-                                dev.write_attribute(str(self.listofbpmattributeslistbox.currentText()),False)
+                                dev.write_attribute(str(self.listofattributeslistbox.currentText()),False)
                             if val is False: # If true --> Interlock is disabled.
-                                dev.write_attribute(str(self.listofbpmattributeslistbox.currentText()),True)
+                                dev.write_attribute(str(self.listofattributeslistbox.currentText()),True)
                             time.sleep(0.5)
-                            val2 = dev.read_attribute(str(self.listofbpmattributeslistbox.currentText())).value
+                            val2 = dev.read_attribute(str(self.listofattributeslistbox.currentText())).value
                             if val2 is True:
                                 if platform.system() == "Linux":
                                     item.setStyleSheet('background-color: lime')
@@ -339,8 +326,8 @@ class Dialog(QtGui.QDialog):
         listGui = listbtnGUI(self)
         listGui.setModal(True)
         listGui.exec_()
-        self.listofbpmattributeslistbox.clear()
-        self.listofbpmattributeslistbox.addItems(self.listofbpmattributes)
+        self.listofattributeslistbox.clear()
+        self.listofattributeslistbox.addItems(self.listofattributes)
         if self.showallhideflag is True:
             self.enableallbutton.show()
         elif self.showallhideflag is False:
@@ -369,7 +356,7 @@ class listbtnGUI(QtGui.QDialog):
         self.textboxDevs = QtGui.QPlainTextEdit('\n'.join(parent.devlist))
 
         attrlbl = QtGui.QLabel("List of device attributes:")
-        self.textboxAttr = QtGui.QPlainTextEdit('\n'.join(parent.listofbpmattributes))
+        self.textboxAttr = QtGui.QPlainTextEdit('\n'.join(parent.listofattributes))
 
         rowslbl = QtGui.QLabel("Max. number of rows:")
         self.textboxRows = QtGui.QSpinBox()
@@ -404,7 +391,7 @@ class listbtnGUI(QtGui.QDialog):
 
         textAtts = str(self.textboxAttr.toPlainText())
         self.newlistAtts = textAtts.split()
-        self.parent.listofbpmattributes = self.newlistAtts
+        self.parent.listofattributes = self.newlistAtts
 
         if self.parent.Nrows != self.textboxRows.value():
             self.parent.Nrows = self.textboxRows.value()

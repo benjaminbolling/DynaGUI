@@ -40,32 +40,22 @@ class Dialog(QtGui.QWidget):
                 loadflag = 0
         if loadflag == 0:
             if self.ctrl_library == "Tango": # Some MAX IV Laboratory devices and attributes
-                self.devlist = ['r3-319s2/dia/dcct-01',
-                                'r1-101s/dia/dcct-01',
-                                'r1-108/dia/bpm-02',
-                                'r1-109/dia/bpm-01',
-                                'r3-a110811cab14/dia/bbbz-01',
-                                'b105a/dia/bsmon-01'
-                                ]
-                self.listofbpmattributes = ['lifetime',
-                                            'xpossa',
-                                            'State',
-                                            'SRAM_MD_MODES',
-                                            'SRAM_RMS'
+                self.devlist = ['section1/discipline1/device1',
+                                'section1/discipline1/device2',
+                                'section3/discipline1/device1',
+                                'section3/discipline2/device1']
+                self.listofbpmattributes = ['temp',
+                                            'press'
                                             ]
             elif self.ctrl_library == "EPICS": # Some ESS PV:s
-                self.PV_list = ['LAB:AMC-002-4:I1-YP-TR1-ArrayData',
-                                #'LAB:AMC-002-4:I1-YP-AvgValue',
-                                #'LAB:AMC-002-4:I2-YP-AvgValue',
-                                #'LEBT-010:PwrC-SolPS-01:CurR',
-                                #'LEBT-010:PwrC-SolPS-02:CurR'
-                                ]
-                self.PV_descriptions = ['LAB wave 1',
-                                        #'LAB scalar 1',
-                                        #'LAB scalar 2',
-                                        #'LEBT_Sol-01_Current',
-                                        #'LEBT_Sol-02_Current'
-                                        ]
+                self.PV_list = ['s1:p1-r1:temp',
+                                's1:p1-r2:press',
+                                's3:p1-r1:temp',
+                                's3:p2-r1:temp']
+                self.PV_descriptions = ['S1 P1 R1 temperature',
+                                        'S1 P1 R1 pressure',
+                                        'S3 P1 R1 temperature',
+                                        'S3 P2 R1 temperature']
             elif self.ctrl_library == "Finance":
                 self.stocknames = ['AAPL',
                                    'TSLA',

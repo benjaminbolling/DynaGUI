@@ -44,34 +44,31 @@ class Dialog(QtGui.QDialog):
         if loadflag == 0:
             # List of devices' server domains.
             if self.ctrl_library == "Tango":
-                self.devdoms = ['r3-319l/dia/tco-01/temperature',
-                                'r3-319l/dia/tco-02/temperature',
-                                'r3-319l/dia/tco-03/temperature',
-                                'r1-101/dia/bpm-01/xmeanpossa']
-                self.devdesc = ['R3 319 TCO 01 temperature',
-                                'R3 319 TCO 02 temperature',
-                                'R3 319 TCO 03 temperature',
-                                'R1 101 BPM 01 x-pos']
-                self.devlims = [36,
-                                38,
-                                40,
-                                100]
-            elif self.ctrl_library == "EPICS":
-                self.devdoms = ['LEBT-010:PBI-BCM-001:CurR',
-                                'RFQ-010:PBI-BCM-001:CurR',
-                                'MEBT-010:PBI-BCM-001:CurR',
-                                'MEBT-010:PBI-BPM-001:PosX',
-                                'MEBT-010:PBI-BPM-001:PosY']
-                self.devdesc = ['LEBT BCM 1 Current',
-                                'RFQ BCM 1 Current',
-                                'MEBT BCM 1 Current',
-                                'MEBT BPM 1 x-pos',
-                                'MEBT BPM 1 y-pos']
-                self.devlims = [76,
-                                75,
-                                74,
+                self.devdoms = ['section1/discipline1/device1/temp',
+                                'section1/discipline1/device2/press',
+                                'section3/discipline1/device1/temp',
+                                'section3/discipline2/device1/temp']
+                self.devdesc = ['S1 P1 R1 temperature',
+                                'S1 P1 R2 pressure',
+                                'S3 P1 R1 temperature',
+                                'S3 P2 R1 temperature']
+                self.devlims = [30,
+                                700,
                                 22,
-                                12]
+                                53]
+            elif self.ctrl_library == "EPICS":
+                self.devdoms = ['s1:p1-r1:temp',
+                                's1:p1-r2:press',
+                                's3:p1-r1:temp',
+                                's3:p2-r1:temp']
+                self.devdesc = ['S1 P1 R1 temperature',
+                                'S1 P1 R1 pressure',
+                                'S3 P1 R1 temperature',
+                                'S3 P2 R1 temperature']
+                self.devlims = [30,
+                                700,
+                                22,
+                                53]
             elif self.ctrl_library == "Finance":
                 self.devdoms = ['AAPL',
                                 'TSLA',
