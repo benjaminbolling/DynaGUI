@@ -177,11 +177,11 @@ class Dialog(QtGui.QWidget):
         self.vertlayoutfinance.addWidget(self.financeAlarms)
         self.financeNV.clicked.connect(self.financeNVclicked)
         self.financeAlarms.clicked.connect(self.financeAlarmsclicked)
-        if packagefailure[3] == 1:
+        if packagefailure[4] == 1:
             self.financeNV.setEnabled(False)
             self.financeNV.setToolTip("Import of finance required Python packages (matplotlib backends, pandas, pandas_datareader) failed.")
-            self.finance.setEnabled(False)
-            self.finance.setToolTip("Import of finance required Python packages (matplotlib backends, pandas, pandas_datareader) failed.")
+            self.financeAlarms.setEnabled(False)
+            self.financeAlarms.setToolTip("Import of finance required Python packages (matplotlib backends, pandas, pandas_datareader) failed.")
         self.financeTF.setEnabled(False)
         self.financeTF.setToolTip("Not applicable.")
 
@@ -196,7 +196,7 @@ class Dialog(QtGui.QWidget):
         self.randomNV.clicked.connect(self.randomNVclicked)
         self.randomTF.clicked.connect(self.randomTFclicked)
         self.randomAlarms.clicked.connect(self.randomAlarmsclicked)
-        if packagefailure[4] == 1:
+        if packagefailure[3] == 1:
             self.randomNV.setEnabled(False)
             self.randomNV.setToolTip("Import of the random Python package failed.")
             self.randomTF.setEnabled(False)
