@@ -112,6 +112,9 @@ This widget shows each device or waveform index along the vertical axis and the 
 </table>
 The vertical axis from the 2D plot was converted to the horizontal axis, and colour intensity converted to the vertical axis.
 
+### Part 5: Getting Started Tutorial Completion
+Congratulations, you have now gone through the tutorial of all the applications of the DynaGUI package. Note that all configurations of the different applications can be saved and loaded at a later point in time. More information can be found under the next section User Guide.
+
 ## User Guide
 The user guide contains more information on how to use the package, see [User Guide](UserGuide.pdf).
 
