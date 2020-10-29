@@ -90,6 +90,25 @@ Clicking on Plotting beneath Random will open a widget that looks like the top-l
         </td>
     </tr>
 </table>
+This widget is used for subscribing to different device's various attributes' numerical values (scalars and waveforms/arrays) and its editing widget is equivalent with the one from the Boolean Controller described in Part 2. From here, pressing the 1D plot button, a new widget opens up that prompts the plotting frequency and number of minutes to show in the plot. Pressing Ok will open up a widget that looks like the right widget in the figure above, except for the lines. Press Start Plotting to begin the data acquisition. Clicking on Plot Settings opens up a widget similar to the bottom-left widget. Clicking on Add New Line opens up a new widget prompting for the (legend) name of the new line, followed by a widget prompting for the equation for the new line which can be a function of another or multiple other line(s).
+
+Clicking on the 2D plot button opens up a widget that looks like this:
+<table>
+    <tr>
+        <td>
+            <img alt="DynaGUI NV 2D plotting" src="figure2D.png">
+        </td>
+    </tr>
+</table>
+This widget shows each device or waveform index along the vertical axis and the time is plotted along the horizontal axis. With this, each pixel in the plot is assigned with its unique numerical value coming from a device and/or waveform at a given point in time. This value is represented in the pixel with the colour defined by the colour-map definition (to the right in the figure above). To see the different values at a point in time, drag the yellow marker line to the position in time and click on Plot Trace, which will open up a widget that looks like this:
+<table>
+    <tr>
+        <td>
+            <img alt="DynaGUI NV 2D plotting" src="figure2Dtrace.png">
+        </td>
+    </tr>
+</table>
+The vertical axis from the 2D plot was converted to the horizontal axis, and colour intensity converted to the vertical axis.
 
 ## User Guide
 The user guide contains more information on how to use the package, see [User Guide](UserGuide.pdf).
@@ -107,18 +126,6 @@ As a future development to test the openness of DynaGUI NV and DynaGUI alarms, a
 
 ## Dependencies
 The package depends on multiple Python packages depending on if it is to be used with Tango, EPICS, Finance, Random, or only historical data plotting and browsing.
-
-## Screenshots
-
-
-DynaGUI NV 2D plotting:
-<table>
-    <tr>
-        <td>
-            <img alt="DynaGUI NV 2D plotting" src="figure2D.png">
-        </td>
-    </tr>
-</table>
 
 ## History
 The package was initially developed in 2019 by Benjamin Bolling during his time as an Accelerator Operator at MAX IV Laboratory. It has since then evolved to its current state as it is today.
