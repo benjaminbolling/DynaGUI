@@ -34,6 +34,7 @@ If TANGO is not required by the end user, see steps a.
 4. If all required Python packages have been successfully installed, the package is ready.
 
 ## Getting Started
+### Part 1: The Launcher
 The package can be launched by executing `python Launcher.py` in a terminal from the package's location. Upon execution, a widget will open that looks like this:
 <table>
     <tr>
@@ -44,7 +45,8 @@ The package can be launched by executing `python Launcher.py` in a terminal from
 </table>
 Depending on which packages are installed, different buttons will be enabled and disabled. The package that is included with Python is Random and is hence expected to always load properly, and which we will hence use in this section.
 
-Clicking on Boolean Controller (also referred to as TF) beneath Random will open a widget that looks like this:
+### Part 2: The Boolean Controller (also referred to as TF)
+Clicking on Boolean Controller beneath Random will open a widget that looks like this:
 <table>
     <tr>
         <td>
