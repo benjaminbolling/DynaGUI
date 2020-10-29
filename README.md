@@ -33,7 +33,27 @@ If TANGO is not required by the end user, see steps a.
 
 4. If all required Python packages have been successfully installed, the package is ready.
 
-To launch the package, browse to the package's destination in a terminal and execute | python Launcher.py | to launch DynaGUI.
+## Getting Started
+The package can be launched by executing `python Launcher.py` in a terminal from the package's location. Upon execution, a widget will open that looks like this:
+<table>
+    <tr>
+        <td>
+            <img alt="DynaGUI Launcher" src="figure2.png">
+        </td>
+    </tr>
+</table>
+Depending on which packages are installed, different buttons will be enabled and disabled. The package that is included with Python is Random and is hence expected to always load properly, and which we will hence use in this section.
+
+Clicking on Boolean Controller (also referred to as TF) beneath Random will open a widget that looks like this:
+<table>
+    <tr>
+        <td>
+            <img alt="DynaGUI TF" src="figure4.png">
+        </td>
+    </tr>
+</table>
+
+Each button represents an individual device. The status of each device with the attribute selected are indicated in the different colours discussed previously. If the state is 0 (False) or 1 (True), a signal can be sent out to the device such that the state indicated by the attribute is switched to the opposite for the device. Changing attribute can be carried out by selecting a different one from the attributes drop-down menu. Editing the device configuration is possible by clicking on Edit DynaGUI, which opens up a widget with a list of devices and another list of attributes.
 
 ## User Guide
 The user guide contains more information on how to use the package, see [User Guide](UserGuide.pdf).
@@ -53,24 +73,6 @@ As a future development to test the openness of DynaGUI NV and DynaGUI alarms, a
 The package depends on multiple Python packages depending on if it is to be used with Tango, EPICS, Finance, Random, or only historical data plotting and browsing.
 
 ## Screenshots
-DynaGUI Launcher:
-<table>
-    <tr>
-        <td>
-            <img alt="DynaGUI Launcher" src="figure2.png">
-        </td>
-    </tr>
-</table>
-
-DynaGUI TF:
-<table>
-    <tr>
-        <td>
-            <img alt="DynaGUI TF" src="figure4.png">
-        </td>
-    </tr>
-</table>
-
 DynaGUI NV and 1D plotting:
 <table>
     <tr>
