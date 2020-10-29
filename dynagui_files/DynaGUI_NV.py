@@ -565,7 +565,7 @@ class Dialog(QtGui.QWidget):
                 elif self.ctrl_library == "Randomizer" or self.ctrl_library == "HistoricalData":
                     valid_attr_names = []
                     for n in range(5):
-                        valid_attr_names.append("Random attribute "+str(n))
+                        valid_attr_names.append("Random_attribute_"+str(n))
             except:
                 None
         self.listofbpmattributes = valid_attr_names
