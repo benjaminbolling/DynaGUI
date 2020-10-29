@@ -45,7 +45,7 @@ The package can be launched by executing `python Launcher.py` in a terminal from
         </td>
     </tr>
 </table>
-Depending on which packages are installed, different buttons will be enabled and disabled. The package that is included with Python is Random and is hence expected to always load properly, and which is hence used in the examples in this section. The ideal procedure would be if this tutorial is completed using the Random package and then repeated using the package DynaGUI is intended to be used with (EPICS, Tango or Finance).
+Depending on which packages are installed, different buttons will be enabled and disabled. The package that is included with Python is Random and is hence expected to always load properly, and which is hence used in the examples in this section. The ideal procedure would be if this tutorial is completed using the Random package and then repeated using the package DynaGUI is intended to be used with (EPICS, Tango or Finance) with real data acquisition.
 
 ### Part 2: The Boolean Controller (also referred to as TF)
 Clicking on Boolean Controller beneath the selected package in the launcher will open a widget that looks like this:
