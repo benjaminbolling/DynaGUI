@@ -90,7 +90,9 @@ Clicking on Plotting beneath Random will open a widget that looks like the top-l
         </td>
     </tr>
 </table>
-This widget is used for subscribing to different device's various attributes' numerical values (scalars and waveforms/arrays) and its editing widget is equivalent with the one from the Boolean Controller described in Part 2. From here, pressing the 1D plot button, a new widget opens up that prompts the plotting frequency and number of minutes to show in the plot. Pressing Ok will open up a widget that looks like the right widget in the figure above, except for the lines. Press Start Plotting to begin the data acquisition. Clicking on Plot Settings opens up a widget similar to the bottom-left widget. Clicking on Add New Line opens up a new widget prompting for the (legend) name of the new line, followed by a widget prompting for the equation for the new line which can be a function of another or multiple other line(s).
+This widget is the so-called DynaGUI NV widget and is used for subscribing to different device's various attributes' numerical values (scalars and waveforms/arrays), with its editing widget being equivalent to the one from the Boolean Controller described in Part 2.
+
+From here, pressing the 1D plot button, the selected attribute will be sent for plotting together with the devices that have shown numerical values for the attribute selected. A new widget opens up that prompts the plotting frequency and number of minutes to show in the plot. Pressing Ok will open up a widget that looks like the right widget in the figure above, except for the lines. Press Start Plotting to begin the data acquisition. Clicking on Plot Settings opens up a widget similar to the bottom-left widget. Clicking on Add New Line opens up a new widget prompting for the (legend) name of the new line, followed by a widget prompting for the equation for the new line which can be a function of another or multiple other line(s).
 
 Clicking on the 2D plot button opens up a widget that looks like this:
 <table>
