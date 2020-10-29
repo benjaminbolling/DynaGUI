@@ -39,7 +39,7 @@ The package can be launched by executing `python Launcher.py` in a terminal from
 <table>
     <tr>
         <td>
-            <img alt="DynaGUI Launcher" src="figure2.png">
+            <img alt="DynaGUI Launcher" src="figureLauncher.png">
         </td>
     </tr>
 </table>
@@ -50,12 +50,36 @@ Clicking on Boolean Controller beneath Random will open a widget that looks like
 <table>
     <tr>
         <td>
-            <img alt="DynaGUI TF" src="figure4.png">
+            <img alt="DynaGUI TF" src="figureTF.png">
+        </td>
+    </tr>
+</table>
+Each button represents an individual device. The status of each device with the attribute selected are indicated in the different colours discussed previously. If the state is 0 (False) or 1 (True), a signal can be sent out to the device such that the state indicated by the attribute is switched to the opposite for the device. Changing attribute can be carried out by selecting a different one from the attributes drop-down menu. Editing the device configuration is possible by clicking on Edit DynaGUI, which opens up a widget with a list of devices and another list of attributes similar to this:
+<table>
+    <tr>
+        <td>
+            <img alt="DynaGUI TF" src="figureEditTF.png">
         </td>
     </tr>
 </table>
 
-Each button represents an individual device. The status of each device with the attribute selected are indicated in the different colours discussed previously. If the state is 0 (False) or 1 (True), a signal can be sent out to the device such that the state indicated by the attribute is switched to the opposite for the device. Changing attribute can be carried out by selecting a different one from the attributes drop-down menu. Editing the device configuration is possible by clicking on Edit DynaGUI, which opens up a widget with a list of devices and another list of attributes.
+### Part 3: Value Alarms
+Clicking on Value Alarms beneath Random will open a widget that looks like this:
+<table>
+    <tr>
+        <td>
+            <img alt="DynaGUI Alarms" src="figureAlarms.png">
+        </td>
+    </tr>
+</table>
+Each checkbox represents a device together with an attribute, that is, the full address to a subscriptable object which returns a numerical value. The value next to it is the latest retrieved value of the object. The symbol dropdown menu can be either smaller than or larger than the expected value, which is defined in the numerical inputs to the right. Similar to the Boolean Controller described in Part 2, the devices can be edited by clicking on Edit DynaGUI which opens up a widget similar to this:
+<table>
+    <tr>
+        <td>
+            <img alt="DynaGUI TF" src="figureEditAlarms.png">
+        </td>
+    </tr>
+</table>
 
 ## User Guide
 The user guide contains more information on how to use the package, see [User Guide](UserGuide.pdf).
@@ -89,15 +113,6 @@ DynaGUI NV 2D plotting:
     <tr>
         <td>
             <img alt="DynaGUI NV 2D plotting" src="figure3.png">
-        </td>
-    </tr>
-</table>
-
-DynaGUI Alarms:
-<table>
-    <tr>
-        <td>
-            <img alt="DynaGUI Alarms" src="figure5.png">
         </td>
     </tr>
 </table>
