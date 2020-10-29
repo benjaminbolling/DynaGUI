@@ -29,7 +29,7 @@ If TANGO is not required by the end user, see steps a.
 
    b) Use PIP to install all packages required, see [requirements with PyTango](requirements_tango.yml), or use conda to create the environment:
 
-    conda env create --file environments_tango.yml
+    conda env create --file environment_tango.yml
 
 4. If all required Python packages have been successfully installed, the package is ready.
 
