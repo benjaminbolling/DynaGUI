@@ -169,8 +169,8 @@ class Dialog(QtGui.QDialog):
         self.horizlayout1.addWidget(self.unselectallbtn)
 
         self.startstopbtn = QtGui.QPushButton("Not running. Press to activate.")
-        self.startstopbtn.clicked.connect(self.startstopclicked)
         self.startstopbtn.setStyleSheet('QPushButton {background-color: maroon; color: white}')
+        self.startstopbtn.clicked.connect(self.startstopclicked)
         self.toplayout.addWidget(self.startstopbtn)
         # Run the script for generating the dynamical buttons
         self.getallDevs()

@@ -72,11 +72,21 @@ Clicking on Value Alarms beneath Random will open a widget that looks like this:
         </td>
     </tr>
 </table>
-Each checkbox represents a device together with an attribute, that is, the full address to a subscriptable object which returns a numerical value. The value next to it is the latest retrieved value of the object. The symbol dropdown menu can be either smaller than or larger than the expected value, which is defined in the numerical inputs to the right. Similar to the Boolean Controller described in Part 2, the devices can be edited by clicking on Edit DynaGUI which opens up a widget similar to this:
+Each checkbox represents a device together with an attribute, that is, the full address to a subscriptable object which returns a numerical value. The value next to it is the latest retrieved value of the object. The symbol dropdown menu can be either smaller than or larger than the expected value, which is defined in the numerical inputs to the right. To run, press the bottom button (and then press again to stop). If a row's logics condition is false, the software will notify with sound and mark the row's background red. Similar to the Boolean Controller described in Part 2, the devices can be edited and the alarm timing set by clicking on Edit DynaGUI which opens up a widget similar to this:
 <table>
     <tr>
         <td>
             <img alt="DynaGUI TF" src="figureEditAlarms.png">
+        </td>
+    </tr>
+</table>
+
+### Part 4: Plotting (also referred to as NV)
+Clicking on Plotting beneath Random will open a widget that looks like the top-left widget in the figure below:
+<table>
+    <tr>
+        <td>
+            <img alt="DynaGUI NV" src="figureNV.png">
         </td>
     </tr>
 </table>
@@ -99,20 +109,13 @@ As a future development to test the openness of DynaGUI NV and DynaGUI alarms, a
 The package depends on multiple Python packages depending on if it is to be used with Tango, EPICS, Finance, Random, or only historical data plotting and browsing.
 
 ## Screenshots
-DynaGUI NV and 1D plotting:
-<table>
-    <tr>
-        <td>
-            <img alt="DynaGUI NV" src="figure1.png">
-        </td>
-    </tr>
-</table>
+
 
 DynaGUI NV 2D plotting:
 <table>
     <tr>
         <td>
-            <img alt="DynaGUI NV 2D plotting" src="figure3.png">
+            <img alt="DynaGUI NV 2D plotting" src="figure2D.png">
         </td>
     </tr>
 </table>
