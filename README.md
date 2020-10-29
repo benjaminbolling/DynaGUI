@@ -34,6 +34,8 @@ If TANGO is not required by the end user, see steps a.
 4. If all required Python packages have been successfully installed, the package is ready.
 
 ## Getting Started
+This section is a tutorial. Begin with Part 1, followed by Parts 2-4.
+
 ### Part 1: The Launcher
 The package can be launched by executing `python Launcher.py` in a terminal from the package's location. Upon execution, a widget will open that looks like this:
 <table>
@@ -46,7 +48,7 @@ The package can be launched by executing `python Launcher.py` in a terminal from
 Depending on which packages are installed, different buttons will be enabled and disabled. The package that is included with Python is Random and is hence expected to always load properly, and which we will hence use in this section.
 
 ### Part 2: The Boolean Controller (also referred to as TF)
-Clicking on Boolean Controller beneath Random will open a widget that looks like this:
+Clicking on Boolean Controller beneath Random in the launcher will open a widget that looks like this:
 <table>
     <tr>
         <td>
@@ -64,7 +66,7 @@ Each button represents an individual device. The status of each device with the 
 </table>
 
 ### Part 3: Value Alarms
-Clicking on Value Alarms beneath Random will open a widget that looks like this:
+Clicking on Value Alarms beneath Random in the launcher will open a widget that looks like this:
 <table>
     <tr>
         <td>
@@ -82,7 +84,7 @@ Each checkbox represents a device together with an attribute, that is, the full 
 </table>
 
 ### Part 4: Plotting (also referred to as NV)
-Clicking on Plotting beneath Random will open a widget that looks like the top-left widget in the figure below:
+Clicking on Plotting beneath Random in the launcher will open a widget that looks like the top-left widget in the figure below:
 <table>
     <tr>
         <td>
