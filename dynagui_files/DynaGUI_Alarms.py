@@ -121,12 +121,10 @@ class Dialog(QtGui.QDialog):
         # Construct the toplayout and make it stretchable
         self.toplayout = QtGui.QVBoxLayout(self)
         self.toplayout.addStretch()
-
         # Construct a horizontal layout box for the edit and get all attribute buttons (must be a sublayer of the toplayout)
         self.editgetallwdg = QtGui.QWidget(self)
         self.toplayout.addWidget(self.editgetallwdg)
         self.horizlayout0 = QtGui.QHBoxLayout(self.editgetallwdg)
-
         # Construct the button for setting up a dynamic list of attributes
         self.listbtn = QtGui.QPushButton("Edit DynaGUI")
         self.listbtn.clicked.connect(self.listbtnclicked)
@@ -136,30 +134,24 @@ class Dialog(QtGui.QDialog):
             self.doublevalidator = QtGui2.QDoubleValidator(-float('inf'),float('inf'),5)
         except:
             self.doublevalidator = QtGui.QDoubleValidator(-float('inf'),float('inf'),5)
-
         # Now we construct the sublayout which will consist of the dynamically constructed buttons of the lists defined above (in example; list1 or list2)
         self.sublayout = QtGui.QGridLayout()
         self.toplayout.addLayout(self.sublayout)
-
         # Now we construct a groupbox for all the dynamically constructed buttons. Edit its text to whatever is appropriate. Then its added to the sublayout.# Now we construct the sublayout which will consist of the dynamically constructed buttons of the lists defined above (in example; list1 or list2)
         self.groupBox = QtGui.QGroupBox()
         self.sublayout.addWidget(self.groupBox)
         self.sublayout = QtGui.QGridLayout(self.groupBox)
-
         # Construct a simple label widget which in this example has the purpose of displaying various messages to the user (status messages)
         self.bottomlabel = QtGui.QLabel("")
         self.toplayout.addWidget(self.bottomlabel)
-
         # Construct a horizontal layout box for the load and save buttons (must be a sublayer of the toplayout)
         self.loadsavewdg = QtGui.QWidget(self)
         self.toplayout.addWidget(self.loadsavewdg)
         self.horizlayout1 = QtGui.QHBoxLayout(self.loadsavewdg)
-
         # Construct a horiztontal layout box for the Plot and Update buttons (must be a sublayer of the toplayout)
         self.plotupdwdg = QtGui.QWidget(self)
         self.toplayout.addWidget(self.plotupdwdg)
         self.horizlayout2 = QtGui.QHBoxLayout(self.plotupdwdg)
-
         # Construct the load and save buttons, connect them to their functions and add them to their horizontal container
         self.loadbtn = QtGui.QPushButton("Load")
         self.savebtn = QtGui.QPushButton("Save")
@@ -177,7 +169,7 @@ class Dialog(QtGui.QDialog):
         self.horizlayout1.addWidget(self.savebtn)
         self.horizlayout1.addWidget(self.selectallbtn)
         self.horizlayout1.addWidget(self.unselectallbtn)
-
+        # Construct the start/stop button for comparing channel values with limits defined
         self.startstopbtn = QtGui.QPushButton("Not running. Press to activate.")
         self.startstopbtn.setStyleSheet('QPushButton {background-color: maroon; color: white}')
         self.startstopbtn.clicked.connect(self.startstopclicked)
