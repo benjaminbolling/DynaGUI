@@ -28,10 +28,13 @@ from functools import partial
 from time import sleep
 import sys
 class Dialog(QtGui.QDialog):
+    # This is the class in which the DynaGUI window is constructed
     def __init__(self, inp, ctrl_library):
+        # Intialization of start-up parameters and Qt
         QtGui.QDialog.__init__(self)
         self.ctrl_library = ctrl_library
         self.setWindowTitle("DynaGUI Alarms")
+        # Input 0 means load with standard pre-defined configurations (no file to load to during start-up)
         if inp == 0:
             loadflag = 0
         else:
@@ -42,7 +45,7 @@ class Dialog(QtGui.QDialog):
             except:
                 loadflag = 0
         if loadflag == 0:
-            # List of devices' server domains.
+            # List of some sample channels, some samples to load here if no start-up file was defined above
             if self.ctrl_library == "Tango":
                 self.devdoms = ['section1/discipline1/device1/temp',
                                 'section1/discipline1/device2/press',
@@ -104,10 +107,17 @@ class Dialog(QtGui.QDialog):
                                 100,
                                 1000]
             self.Nrows = 20
+        # Reloadflag is used for stating if there are pre-existing control buttons; 1 == rmv them, 0 == nothing to remove which is only during start-up
         self.reloadflag = 0
-        self.maxsize = 0
         self.timerinterval = 30 # seconds
-
+        # Create the layout
+        self.createLayout()
+        # Run the script for generating the dynamical buttons with the channels defined
+        self.getallDevs()
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.statuscheck)
+    def createLayout(self):
+        # Create the layout
         # Construct the toplayout and make it stretchable
         self.toplayout = QtGui.QVBoxLayout(self)
         self.toplayout.addStretch()
@@ -172,21 +182,16 @@ class Dialog(QtGui.QDialog):
         self.startstopbtn.setStyleSheet('QPushButton {background-color: maroon; color: white}')
         self.startstopbtn.clicked.connect(self.startstopclicked)
         self.toplayout.addWidget(self.startstopbtn)
-        # Run the script for generating the dynamical buttons
-        self.getallDevs()
-
-        self.timer = QtCore.QTimer()
-        self.timer.timeout.connect(self.statuscheck)
-
     def selectallbtnclicked(self):
+        # Set all alarms to be checked
         for item in self.groupBox.findChildren(QtGui.QCheckBox):
             item.setChecked(True)
-
     def unselectallbtnclicked(self):
+        # Set all alarms to be unchecked
         for item in self.groupBox.findChildren(QtGui.QCheckBox):
             item.setChecked(False)
-
     def savebtnclicked(self):
+        # Save the DynaGUI configuration
         nameoffile = QtGui.QFileDialog.getSaveFileName(self, 'Save to File', "", "DynaGUI Alarms file (*.dg3)")[0]
         if not nameoffile:
             self.bottomlabel.setText("Cancelled save configuration.")
@@ -197,56 +202,55 @@ class Dialog(QtGui.QDialog):
             file.close()
             self.bottomlabel.setText("Configuration saved to file.")
             self.bottomlabel.setToolTip("Saved configuation to file: "+nameoffile)
-
     def loadbtnclicked(self):
+        # The button was clicked to load a file
         nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File', "", "DynaGUI Alarms file (*.dg3)")[0]
         if not nameoffile:
             self.bottomlabel.setText("Cancelled loading configuration.")
         else:
             self.loadfile(nameoffile,0)
-
     def loadfile(self,nameoffile,inp2):
-            file = open(nameoffile, 'r')
-            splitToLoad = file.read()
-            splitToLoad = splitToLoad.split("##IamYourSeparator##")
-            identifier = splitToLoad[0].split('\n')
-            while("" in identifier): # Get rid of empty strings
-                identifier.remove("")
-            if identifier[0] == 'IamaDynaGUIalarmFile':
-                try:
-                    if inp2 == 0:
-                        # Destroy the current buttons.
-                        self.killdynamicbuttongroup()
-                    devdoms = splitToLoad[1].split("\n")
-                    while("" in devdoms): # Get rid of empty strings
-                        devdoms.remove("")
-                    devdesc = splitToLoad[2].split("\n")
-                    while("" in devdesc): # Get rid of empty strings
-                        devdesc.remove("")
-                    devlims = splitToLoad[3].split("\n")
-                    while("" in devlims): # Get rid of empty strings
-                        devlims.remove("")
-                    devvlims = [float(i) for i in devlims]
-                    Nrows = float(splitToLoad[4].split("\n")[1])
-                    self.devdoms = devdoms
-                    self.devdesc = devdesc
-                    self.devlims = devvlims
-                    self.Nrows = float(Nrows)
-                    # All buttons are gone, so lets construct the new buttons.
-                    self.getallDevs()
-                    # The layout should be minimal, so make it unrealistically small (x=10, y=10 [px]) and then resize to minimum.
-                    self.resize(10,10)
-                    self.resize(self.sizeHint().width(), self.sizeHint().height())
-                    self.bottomlabel.setToolTip("Loaded configuration from file: "+nameoffile)
-                except:
-                    if inp2 == 0:
-                        self.bottomlabel.setText("Conf. file error: Missing separator(s).")
-            else:
+        # Load a previously saved configuration
+        file = open(nameoffile, 'r')
+        splitToLoad = file.read()
+        splitToLoad = splitToLoad.split("##IamYourSeparator##")
+        identifier = splitToLoad[0].split('\n')
+        while("" in identifier): # Get rid of empty strings
+            identifier.remove("")
+        if identifier[0] == 'IamaDynaGUIalarmFile':
+            try:
                 if inp2 == 0:
-                    self.bottomlabel.setText("Not a DynaGUI alarm file - missing identifier.")
-
+                    # Destroy the current buttons
+                    self.killdynamicbuttongroup()
+                devdoms = splitToLoad[1].split("\n")
+                while("" in devdoms): # Get rid of empty strings
+                    devdoms.remove("")
+                devdesc = splitToLoad[2].split("\n")
+                while("" in devdesc): # Get rid of empty strings
+                    devdesc.remove("")
+                devlims = splitToLoad[3].split("\n")
+                while("" in devlims): # Get rid of empty strings
+                    devlims.remove("")
+                devvlims = [float(i) for i in devlims]
+                Nrows = float(splitToLoad[4].split("\n")[1])
+                self.devdoms = devdoms
+                self.devdesc = devdesc
+                self.devlims = devvlims
+                self.Nrows = float(Nrows)
+                # All buttons are gone, so let's construct the new buttons.
+                self.getallDevs()
+                # The layout should be minimal, so make it unrealistically small (x=10, y=10 [px]) and then resize to minimum.
+                self.resize(10,10)
+                self.resize(self.sizeHint().width(), self.sizeHint().height())
+                self.bottomlabel.setToolTip("Loaded configuration from file: "+nameoffile)
+            except:
+                if inp2 == 0:
+                    self.bottomlabel.setText("Conf. file error: Missing separator(s).")
+        else:
+            if inp2 == 0:
+                self.bottomlabel.setText("Not a DynaGUI alarm file - missing identifier.")
     def killdynamicbuttongroup(self):
-        # Destroy / kill all buttons currently constructed in the buttongroup.
+        # Destroy / kill all buttons currently constructed in the buttongroup
         for i in reversed(range(self.sublayout.count())):
             item = self.sublayout.itemAt(i)
             if isinstance(item, QtGui.QWidgetItem):
@@ -260,12 +264,10 @@ class Dialog(QtGui.QDialog):
         for item in self.groupBox.findChildren(QtGui.QLabel):
             self.sublayout.removeWidget(item)
             item.deleteLater()
-
-
     def getallDevs(self):
+        # Construct the buttongroup with the widgets for all the channels defined
         rowcount = -1
         colcount = 0
-
         # Here the construction begins for all the checkboxes, and we make them all belong to the groupbox.
         for numm, index in enumerate(self.devdesc):
             rowcount += 1
@@ -278,13 +280,8 @@ class Dialog(QtGui.QDialog):
                 self.devlims.append(0)
             textbox.setValidator(self.doublevalidator)
             combobox = QtGui.QComboBox(self.groupBox)
-            if self.ctrl_library == "Finance":
-                combobox.addItem(">")
-                combobox.addItem("<")
-            else:
-                combobox.addItem("<")
-                combobox.addItem(">")
-
+            combobox.addItem(">")
+            combobox.addItem("<")
             textbox.setEnabled(True)
             textbox.textChanged.connect(partial(self.lineeditedited,textbox))
             label = QtGui.QLabel("-",self.groupBox)
@@ -293,33 +290,35 @@ class Dialog(QtGui.QDialog):
             self.sublayout.addWidget(combobox,rowcount,colcount+2,1,1)
             self.sublayout.addWidget(textbox,rowcount,colcount+3,1,1)
             if rowcount == self.Nrows - 1:
+                # Reached maximum number of rows; start a new column and set row to 0
                 rowcount = -1
                 colcount += 4
-
         # Here we construct the buttongroup.
         self.buttonGroup = QtGui.QButtonGroup(self)
-
         # Here we add all buttons to the buttongroup.
         for button in self.groupBox.findChildren(QtGui.QPushButton):
             if self.buttonGroup.id(button) < 0:
                 self.buttonGroup.addButton(button)
-
         # Get the statuses
         self.statuscheck()
-
     def lineeditedited(self,lineedit):
+        # Limit of an alarm has been changed
         n = -1
+        # Loop through the lineedit widgets
         for item in self.groupBox.findChildren(QtGui.QLineEdit):
             n += 1
             if lineedit is item:
+                # lineedit edited found, update this channel's limit
                 self.devlims[n] = item.text()
-
     def startstopclicked(self):
+        # The button to start or stop checking channel values vs limits clicked
         if self.timer.isActive():
+            # It is running so stop all
             self.timer.stop()
             self.startstopbtn.setText("Not running. Press to activate.")
             self.startstopbtn.setStyleSheet('QPushButton {background-color: maroon; color: white}')
         else:
+            # It is not running so start checking values
             self.alarmflag = 0
             self.statuscheck()
             self.timer.start(self.timerinterval * 1000)
@@ -330,16 +329,14 @@ class Dialog(QtGui.QDialog):
                 self.startstopbtn.setStyleSheet('QPushButton {background-color: green; color: white}')
             else:
                 self.startstopbtn.setStyleSheet('QPushButton {background-color: lime; color: white}')
-
-    def clock(self):
-        print("tic-tac")
-
     def statuscheck(self):
+        # Check the states of all channels vs limits
         checkboxes = self.groupBox.findChildren(QtGui.QCheckBox)
         lineedits = self.groupBox.findChildren(QtGui.QLineEdit)
         labels = self.groupBox.findChildren(QtGui.QLabel)
         combos = self.groupBox.findChildren(QtGui.QComboBox)
         alarmstring = 0
+        # Loop through all channels and retrieve their values
         for ind, item in enumerate(checkboxes):
             if self.ctrl_library == "Tango":
                 splitt = str(item.toolTip()).split("/")
@@ -364,149 +361,140 @@ class Dialog(QtGui.QDialog):
                 except:
                     print("failed to retreive data for "+proxy)
                     val = 0
-            lorm = str(combos[ind].currentText())
+            # Update the value shown for the channel
             labels[ind].setText(str(val))
             if item.isChecked():
-                print(val)
-                print(lorm)
-                print(float(lineedits[ind].text()))
-                print(float(lineedits[ind].text()) > val)
+                # Limit is to be checked since this channel's checkbox is checked
+                # Check if value should be less than or more than the limit
+                # If condition is untrue, paint background red and speak that it is in alarm - otherwise make background green
+                lorm = str(combos[ind].currentText())
                 if lorm == "<":
                     if val > float(lineedits[ind].text()):
                         if alarmstring == 0:
                             alarmstring = str(item.text())
                         else:
                             alarmstring = str(alarmstring + " [[slnc 200]] and [[slnc 200]] " + str(item.text()))
-                        item.setStyleSheet("background-color: red")
+                        self.paintRed(item)
                     else:
-                        if platform.system() == "Linux":
-                            item.setStyleSheet("background-color: lime")
-                        elif platform.system() == "Darwin":
-                            item.setStyleSheet("background-color: green")
-                        else:
-                            item.setStyleSheet('background-color: lime')
+                        self.paintGreen(item)
                 elif lorm == ">":
                     if val < float(lineedits[ind].text()):
                         if alarmstring == 0:
                             alarmstring = str(item.text())
                         else:
                             alarmstring = str(alarmstring + " [[slnc 200]] and [[slnc 200]] " + str(item.text()))
-                        item.setStyleSheet("background-color: red")
+                        self.paintRed(item)
                     else:
-                        if platform.system() == "Linux":
-                            item.setStyleSheet("background-color: lime")
-                        elif platform.system() == "Darwin":
-                            item.setStyleSheet("background-color: green")
-                        else:
-                            item.setStyleSheet('background-color: lime')
+                        self.paintGreen(item)
             else:
                 item.setStyleSheet('background-color: grey')
         if alarmstring == 0:
+            # There is no active alarms so send message all clear to the log (bottomlabel)
             self.bottomlabel.setText("All clear.")
             self.alarmflag = 0
         else:
+            # There is an active alarm so send this message to the log (bottomlabel)
             if self.alarmflag == 0:
                 if platform.system() == "Linux":
                     os.system('spd-say "' + str("".join(alarmstring.split("[[slnc 200]]"))) + '[[slnc 200]] in alarm."')
                 elif platform.system() == "Darwin":
                     os.system("say -v 'karen' "+ alarmstring + '[[slnc 200]] in alarm.')
                 elif platform.system() == "Windows":
-                    print("Windows")
+                    print("Windows - no voice speaker set up yet")
                 self.alarmflag = 1
             self.bottomlabel.setText(str(datetime.now().strftime("%Y-%b-%d_%H%M%S")) + ", " + str("".join(alarmstring.split("[[slnc 200]]")))+" in alarm.")
-
+    def paintGreen(self,item):
+        # Paint the background colour green or lime depending on OS
+        if platform.system() == "Linux":
+            item.setStyleSheet("background-color: lime")
+        elif platform.system() == "Darwin":
+            item.setStyleSheet("background-color: green")
+        else:
+            item.setStyleSheet('background-color: lime')
+    def paintRed(self,item):
+        # Paint the background colour red
+        item.setStyleSheet("background-color: red")
     def listbtnclicked(self):
+        # Launch the edit DynaGUI window
         listGui = listbtnGUI(self)
         listGui.setModal(True)
         listGui.exec_()
-
         if self.reloadflag == 1:
-            self.maxsize = 0
+            # Remove all channel limit rows
             self.killdynamicbuttongroup()
+            # Construct all channel limit rows
             self.getallDevs()
-
             # The layout should be minimal, so make it unrealistically small (x=10, y=10 [px]) and then resize to minimum.
             self.reloadflag = 0
-
     def closeEvent(self, event):
+        # This stops the timer event
         self.timer.stop()
 
 class listbtnGUI(QtGui.QDialog):
+    # This is the class in which the Edit DynaGUI window is constructed
     def __init__(self, parent = Dialog):
+        # Initialize the parameters needed for this window
         super(listbtnGUI, self).__init__(parent)
         self.parent = parent
-        self.setWindowTitle("Edit DynaGUI Alarms")
-        listgui = QtGui.QFormLayout(self)
-
-        devslbl = QtGui.QLabel("List of devices' server domains:")
+        # Only the widgets which require the parent parameters are constructed here
         self.textboxDevs = QtGui.QPlainTextEdit('\n'.join(parent.devdoms))
-
-        desclbl = QtGui.QLabel("List of devices' descriptions:")
         self.textboxDesc = QtGui.QPlainTextEdit('\n'.join(parent.devdesc))
-
-        rowslbl = QtGui.QLabel("Max. number of rows:")
         self.textboxRows = QtGui.QSpinBox()
         self.textboxRows.setValue(parent.Nrows)
-
-        tmrlbl = QtGui.QLabel("Alarms timer [s]")
         self.textboxTmr = QtGui.QSpinBox()
         self.textboxTmr.setValue(parent.timerinterval)
-
+        # Create the window layout
+        self.createLayout()
+    def createLayout(self):
+        # Create the window layout
+        self.setWindowTitle("Edit DynaGUI Alarms")
+        listgui = QtGui.QFormLayout(self)
+        devslbl = QtGui.QLabel("List of devices' server domains:")
+        desclbl = QtGui.QLabel("List of devices' descriptions:")
+        rowslbl = QtGui.QLabel("Max. number of rows:")
+        tmrlbl = QtGui.QLabel("Alarms timer [s]")
         okbtn = QtGui.QPushButton('Ok')
         nobtn = QtGui.QPushButton('Cancel')
-
-
-        listgui.addRow(devslbl,desclbl)
-        listgui.addRow(self.textboxDevs,self.textboxDesc)
-
-        listgui.addRow(rowslbl,self.textboxRows)
-
-        listgui.addRow(tmrlbl,self.textboxTmr)
-
-        listgui.addRow(okbtn, nobtn)
         okbtn.clicked.connect(self.confirmfunc)
         nobtn.clicked.connect(self.cancelfunc)
-
-
+        listgui.addRow(devslbl,desclbl)
+        listgui.addRow(self.textboxDevs,self.textboxDesc)
+        listgui.addRow(rowslbl,self.textboxRows)
+        listgui.addRow(tmrlbl,self.textboxTmr)
+        listgui.addRow(okbtn, nobtn)
         self.resize(self.sizeHint().width(), self.sizeHint().height())
-
     def confirmfunc(self):
+        # All values defined in the edit window are to be sent to the parent as is
         textDevs = str(self.textboxDevs.toPlainText())
         textDescs = str(self.textboxDesc.toPlainText())
         self.newlistDevs = textDevs.split('\n')
         self.newlistDescs = textDescs.split('\n')
-
-        # Check if all devices have domain, description and limits defined:
-        print(len(self.newlistDevs)-len(self.newlistDescs))
-        print(self.newlistDevs)
-        print(self.newlistDescs)
+        # Check if all devices have domain, description and limits defined: (otherwise don't close)
         if abs(len(self.newlistDevs)-len(self.newlistDescs)) == 0:
             self.parent.timerinterval = self.textboxTmr.value()
             if self.parent.devdoms != self.newlistDevs or self.parent.devdesc != self.newlistDescs:
                 self.parent.devdoms = self.newlistDevs
                 self.parent.devdesc = self.newlistDescs
                 self.parent.reloadflag = 1
-
             if self.parent.Nrows != self.textboxRows.value():
                 self.parent.Nrows = self.textboxRows.value()
                 self.parent.reloadflag = 1
+            # Then close the window
             self.close()
         else:
-            if platform.system() == "Linux":
-                os.system('spd-say "Error"')
-            elif platform.system() == "Darwin":
-                os.system("say -v 'karen' Error")
-            elif platform.system() == "Windows":
-                print("Windows")
+            # Number of domains and descriptions do not match, so do not send new values to parent and do not close
+            self.parent.reloadflag = 0
             QtGui.QMessageBox.warning(self,"Error","Number of domains and descriptions must be the same.")
-
-
     def cancelfunc(self):
+        # Just close the window, no values sent back
+        self.parent.reloadflag = 1
         self.close()
 
 if __name__ == '__main__':
+    # The GUI has been launched, check control library package (argv 1)
+    ctrl_library = sys.argv[1]
+    # Check if a saved configuration file is defined and if so, load it
     try:
-        ctrl_library = sys.argv[1]
         inp = sys.argv[2]
     except:
         inp = 0
@@ -523,6 +511,7 @@ if __name__ == '__main__':
         import pandas_datareader as pdr
     else:
         goflag = 0
+    # All seems to be fine so start the GUI
     if goflag == 1:
         window = Dialog(inp,ctrl_library)
         window.show()

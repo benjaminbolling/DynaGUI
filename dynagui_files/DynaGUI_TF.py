@@ -31,6 +31,7 @@ class Dialog(QtGui.QDialog):
         QtGui.QDialog.__init__(self)
         self.setWindowTitle("DynaGUI TF")
         self.ctrl_library = ctrl_library
+        # Input 0 means load with standard pre-defined configurations (no file to load to during start-up)
         if inp == 0:
             loadflag = 0
         else:
@@ -41,11 +42,11 @@ class Dialog(QtGui.QDialog):
             except:
                 loadflag = 0
         if loadflag == 0:
-            # All device attributes (which can be 0/1) needed, used for initialization during start-up
+            # All channel attributes (which can be 0/1) needed, used for initialization during start-up
             self.listofattributes = ['Attribute1',
                                    'Attribute2',
                                    'Attribute3']
-            # Some list of devices, used for initialization during start-up
+            # Some list of channels, used for initialization during start-up
             self.devlist = ['section1/discipline1/device1',
                             'section1/discipline1/device2',
                             'section3/discipline1/device1',
@@ -176,18 +177,18 @@ class Dialog(QtGui.QDialog):
             if inp2 == 0:
                 self.bottomlabel.setText("Not a DynaGUI file - missing identifier.")
     def enableallbuttonclicked(self):
-        # Set the attribute selected to true for all devices
+        # Set the attribute selected to true for all channels
         if ctrl_library == "Randomizer":
             self.devstat.clear()
         for item in self.buttonGroup.buttons():
             proxy = item.text()
             if self.ctrl_library == "Tango":
                 prox=[PT.DeviceProxy(str(proxy))]
-                # Get the states of all devices, one at a time
+                # Get the states of all channels, one at a time
                 for dev in prox:
                     try:
                         val = dev.read_attribute(str(self.listofattributeslistbox.currentText())).value
-                        # Try to write to the device
+                        # Try to write to the channel
                         if val is False: # If false, interlock is disabled.
                             dev.write_attribute(str(self.listofattributeslistbox.currentText()),True)
                     except:
@@ -219,6 +220,7 @@ class Dialog(QtGui.QDialog):
             self.sublayout.addWidget(button,rowcount,colcount,1,1)
             self.groupBox.setStyleSheet("text-align:center")
             if rowcount == self.Nrows - 1:
+                # Reached maximum number of rows; start a new column and set row to 0
                 rowcount = -1
                 colcount += 1
         # Here we construct the buttongroup.
@@ -231,7 +233,7 @@ class Dialog(QtGui.QDialog):
         # Get the statuses
         self.statuscheck()
     def statuscheck(self):
-        # Check status of the attribute for all devices
+        # Check status of the attribute for all channels
         if ctrl_library == "Randomizer":
             n = -1
         # Loop through all control buttons
@@ -278,7 +280,7 @@ class Dialog(QtGui.QDialog):
                 n += 1
             # The button id has been found in the button group
             if button is item:
-                # The text of the item is the device's channel
+                # The text of the item is the channel's channel
                 proxy = item.text()
                 # Change the value from false to true or true to false for the different control libraries and then update the statuses and colours
                 if self.ctrl_library == "Tango":
@@ -355,8 +357,8 @@ class listbtnGUI(QtGui.QDialog):
         # Create the window layout
         self.setWindowTitle("Edit DynaGUI TF")
         listgui = QtGui.QFormLayout(self)
-        devslbl = QtGui.QLabel("List of devices::")
-        attrlbl = QtGui.QLabel("List of device attributes:")
+        devslbl = QtGui.QLabel("List of channels:")
+        attrlbl = QtGui.QLabel("List of channel attributes:")
         rowslbl = QtGui.QLabel("Max. number of rows:")
         okbtn = QtGui.QPushButton('Ok')
         nobtn = QtGui.QPushButton('Cancel')
@@ -388,7 +390,8 @@ class listbtnGUI(QtGui.QDialog):
         # Then close the window
         self.close()
     def cancelfunc(self):
-        # Just close the window
+        # Just close the window, no values sent back
+        self.parent.reloadflag = 0
         self.close()
 
 if __name__ == '__main__':

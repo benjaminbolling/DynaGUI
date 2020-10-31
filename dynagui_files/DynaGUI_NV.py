@@ -16,6 +16,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+# Import all needed Python packages
 try:
     import PyQt5.QtWidgets as QtGui
     import PyQt5.QtGui as QtGui2
