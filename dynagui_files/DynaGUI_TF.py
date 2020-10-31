@@ -16,6 +16,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+# Import all needed Python packages
 try:
     import PyQt5.QtWidgets as QtGui
     from PyQt5 import QtCore
@@ -24,7 +25,9 @@ except:
 import time, sys, platform
 
 class Dialog(QtGui.QDialog):
+    # This is the class in which the DynaGUI window is constructed
     def __init__(self, inp, ctrl_library):
+        # Intialization of start-up parameters and Qt
         QtGui.QDialog.__init__(self)
         self.setWindowTitle("DynaGUI TF")
         self.ctrl_library = ctrl_library
@@ -32,35 +35,37 @@ class Dialog(QtGui.QDialog):
             loadflag = 0
         else:
             try:
-                self.loadfile(inp,1)
+                self.loadfile(inp,1) # 1 means that a file is being loaded before anything was constructed (load on start)
                 self.Nrows
                 loadflag = 1
             except:
                 loadflag = 0
         if loadflag == 0:
-            # All device attributes needed (basically which can be TRUE or False)
+            # All device attributes (which can be 0/1) needed, used for initialization during start-up
             self.listofattributes = ['Attribute1',
                                    'Attribute2',
                                    'Attribute3']
-
-            # Some list of devices
+            # Some list of devices, used for initialization during start-up
             self.devlist = ['section1/discipline1/device1',
                             'section1/discipline1/device2',
                             'section3/discipline1/device1',
                             'section3/discipline2/device1']
             self.Nrows = 20
-        self.reloadflag = 0
+        # Show or hide enable/disable all btn
         self.showallhideflag = False
-
         if ctrl_library == "Randomizer":
             self.devstat = []
             for m in range(len(self.devlist)):
                 self.devstat.append(1)
-
+        # Create the layout of the GUI
+        self.createLayout()
+        # Run the script for generating the dynamical buttons
+        self.getallDevs()
+    def createLayout(self):
+        # Create the layout of the widget.
         # Construct the toplayout and make it stretchable
         self.toplayout = QtGui.QVBoxLayout(self)
         self.toplayout.addStretch()
-
         # Construct the combobox for the list of attributes
         self.listofattributeslistbox = QtGui.QComboBox(self)
         self.listofattributeslistbox.addItems(self.listofattributes)
@@ -113,11 +118,8 @@ class Dialog(QtGui.QDialog):
         self.updatebutton.clicked.connect(self.statuscheck)
         self.toplayout.addWidget(self.updatebutton)
         self.toplayout.addWidget(self.enableallbutton)
-
-        # Run the script for generating the dynamical buttons
-        self.getallDevs()
-
     def savebtnclicked(self):
+        # Save the current configuration to a file
         nameoffile = QtGui.QFileDialog.getSaveFileName(self, 'Save to File', "", "DynaGUI TF files (*.dg1)")[0]
         if not nameoffile:
             self.bottomlabel.setText("Cancelled save configuration.")
@@ -128,63 +130,60 @@ class Dialog(QtGui.QDialog):
             file.close()
             self.bottomlabel.setText("Configuration saved to file.")
             self.bottomlabel.setToolTip("Saved configuation to file: "+nameoffile)
-
     def loadbtnclicked(self):
+        # The button was clicked to load a file
         nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File', "", "DynaGUI TF files (*.dg1)")[0]
         if not nameoffile:
             self.bottomlabel.setText("Cancelled loading configuration.")
         else:
-            self.loadfile(nameoffile,0)
-
+            self.loadfile(nameoffile,0) # 0 means that there is data to be replaced
     def loadfile(self,nameoffile,inp2):
-            print(nameoffile)
-            file = open(nameoffile, 'r')
-            splitToLoad = file.read()
-            splitToLoad = splitToLoad.split("##IamYourSeparator##")
-            identifier = splitToLoad[0].split('\n')
-            while("" in identifier): # Get rid of empty strings
-                identifier.remove("")
-            if identifier[0] == 'IamaDynaGUIfile':
-                print("Identified as a DynaGUI file.")
-                try:
-                    devlist = splitToLoad[1].split("\n")
-                    while("" in devlist): # Get rid of empty strings
-                        devlist.remove("")
-                    listofattributes = splitToLoad[2].split("\n")
-                    while("" in listofattributes): # Get rid of empty strings
-                        listofattributes.remove("")
-                    Nrows = splitToLoad[3].split("\n")[1]
-                    self.devlist = devlist
-                    self.listofattributes = listofattributes
-                    self.Nrows = float(Nrows)
-                    # Destroy the current buttons.
-                    if inp2 == 0:
-                        self.listofattributeslistbox.clear()
-                        self.listofattributeslistbox.addItems(self.listofattributes)
-                        self.bottomlabel.setText("Loaded configuration.")
-                        self.killdynamicbuttongroup()
-                        self.resize(10,10)
-                        # All buttons are gone, so lets construct the new buttons.
-                        self.getallDevs()
-                        # The layout should be minimal, so make it unrealistically small (x=10, y=10 [px]) and then resize to minimum.
-                        self.setMaximumSize(10,10)
-                        #self.resize(self.sizeHint().width(), self.sizeHint().height())
-                        self.bottomlabel.setToolTip("Loaded configuration from file: "+nameoffile)
-                except:
-                    if inp2 == 0:
-                        self.bottomlabel.setText("Conf. file error: Missing separator(s).")
-            else:
+        # Load a previously saved configuration
+        file = open(nameoffile, 'r')
+        splitToLoad = file.read()
+        splitToLoad = splitToLoad.split("##IamYourSeparator##")
+        identifier = splitToLoad[0].split('\n')
+        while("" in identifier): # Get rid of empty strings
+            identifier.remove("")
+        if identifier[0] == 'IamaDynaGUIfile':
+            try:
+                devlist = splitToLoad[1].split("\n")
+                while("" in devlist): # Get rid of empty strings
+                    devlist.remove("")
+                listofattributes = splitToLoad[2].split("\n")
+                while("" in listofattributes): # Get rid of empty strings
+                    listofattributes.remove("")
+                Nrows = splitToLoad[3].split("\n")[1]
+                self.devlist = devlist
+                self.listofattributes = listofattributes
+                self.Nrows = float(Nrows)
+                # Destroy the current buttons since inp2 is 0
                 if inp2 == 0:
-                    self.bottomlabel.setText("Not a DynaGUI file - missing identifier.")
-
+                    self.listofattributeslistbox.clear()
+                    self.listofattributeslistbox.addItems(self.listofattributes)
+                    self.bottomlabel.setText("Loaded configuration.")
+                    self.killdynamicbuttongroup()
+                    self.resize(10,10)
+                # All buttons are gone, so lets construct the new buttons.
+                self.getallDevs()
+                # The layout should be minimal, so make it unrealistically small (x=10, y=10 [px]) and then resize to minimum.
+                self.setMaximumSize(10,10)
+                self.bottomlabel.setToolTip("Loaded configuration from file: "+nameoffile)
+            except:
+                if inp2 == 0:
+                    self.bottomlabel.setText("Conf. file error: Missing separator(s).")
+        else:
+            if inp2 == 0:
+                self.bottomlabel.setText("Not a DynaGUI file - missing identifier.")
     def enableallbuttonclicked(self):
+        # Set the attribute selected to true for all devices
         if ctrl_library == "Randomizer":
             self.devstat.clear()
         for item in self.buttonGroup.buttons():
             proxy = item.text()
             if self.ctrl_library == "Tango":
                 prox=[PT.DeviceProxy(str(proxy))]
-                # Get the states of all devices, one at a time (val)
+                # Get the states of all devices, one at a time
                 for dev in prox:
                     try:
                         val = dev.read_attribute(str(self.listofattributeslistbox.currentText())).value
@@ -196,7 +195,6 @@ class Dialog(QtGui.QDialog):
             elif ctrl_library == "Randomizer":
                 self.devstat.append(1)
         self.statuscheck()
-
     def killdynamicbuttongroup(self):
         # Destroy / kill all buttons currently constructed in the buttongroup.
         self.bottomlabel.setText(str("Loading " + str(self.listofattributeslistbox.currentText()) + " statuses..."))
@@ -206,18 +204,14 @@ class Dialog(QtGui.QDialog):
                 item.widget().close()
         for button in self.groupBox.findChildren(QtGui.QPushButton):
             button.deleteLater()
-
     def getallDevs(self):
         # Construct all necessary buttons
         self.BPMproxies = self.devlist
-
         rowcount = -1
         colcount = 0
-
         self.devstat = []
         for m in range(len(self.devlist)):
             self.devstat.append(1)
-
         # Here the construction begins for all the pushbuttons, and we make them all belong to the groupbox.
         for index in self.BPMproxies:
             rowcount += 1
@@ -227,22 +221,20 @@ class Dialog(QtGui.QDialog):
             if rowcount == self.Nrows - 1:
                 rowcount = -1
                 colcount += 1
-
         # Here we construct the buttongroup.
         self.buttonGroup = QtGui.QButtonGroup(self)
         self.buttonGroup.buttonClicked.connect(self.handleButtonClicked)
-
         # Here we add all buttons to the buttongroup.
         for button in self.groupBox.findChildren(QtGui.QPushButton):
             if self.buttonGroup.id(button) < 0:
                 self.buttonGroup.addButton(button)
-
         # Get the statuses
         self.statuscheck()
-
     def statuscheck(self):
+        # Check status of the attribute for all devices
         if ctrl_library == "Randomizer":
             n = -1
+        # Loop through all control buttons
         for item in self.buttonGroup.buttons():
             try:
                 proxy = item.text()
@@ -264,8 +256,6 @@ class Dialog(QtGui.QDialog):
                         item.setStyleSheet('background-color: fuchsia')
                 elif ctrl_library == "Randomizer":
                     n += 1
-                    print(n)
-                    print(self.devstat)
                     if self.devstat[n] == 1:
                         if platform.system() == "Linux":
                             item.setStyleSheet('background-color: lime')
@@ -278,15 +268,19 @@ class Dialog(QtGui.QDialog):
             except:
                 item.setStyleSheet('QPushButton {background-color: maroon; color: white}')
         self.bottomlabel.setText(str(str(self.listofattributeslistbox.currentText()) + " statuses loaded."))
-
     def handleButtonClicked(self,button):
+        # A control button has been clicked, input is the id of the button clicked
         if ctrl_library == "Randomizer":
             n = -1
+        # Begin by looping through all buttons
         for item in self.buttonGroup.buttons():
             if ctrl_library == "Randomizer":
                 n += 1
+            # The button id has been found in the button group
             if button is item:
+                # The text of the item is the device's channel
                 proxy = item.text()
+                # Change the value from false to true or true to false for the different control libraries and then update the statuses and colours
                 if self.ctrl_library == "Tango":
                     prox=[PT.DeviceProxy(str(proxy))]
                     for dev in prox:
@@ -296,6 +290,7 @@ class Dialog(QtGui.QDialog):
                                 dev.write_attribute(str(self.listofattributeslistbox.currentText()),False)
                             if val is False: # If true --> Interlock is disabled.
                                 dev.write_attribute(str(self.listofattributeslistbox.currentText()),True)
+                            # wait 0.5 seconds so the signal is sent and retrieved before reading the channel's status again
                             time.sleep(0.5)
                             val2 = dev.read_attribute(str(self.listofattributeslistbox.currentText())).value
                             if val2 is True:
@@ -321,50 +316,48 @@ class Dialog(QtGui.QDialog):
                             item.setStyleSheet('background-color: green')
                         else:
                             item.setStyleSheet('background-color: lime')
-
     def listbtnclicked(self):
+        # Launch the edit DynaGUI window
         listGui = listbtnGUI(self)
         listGui.setModal(True)
         listGui.exec_()
+        # The listbox with current attributes must be cleared and then populated with the new items
         self.listofattributeslistbox.clear()
         self.listofattributeslistbox.addItems(self.listofattributes)
         if self.showallhideflag is True:
             self.enableallbutton.show()
         elif self.showallhideflag is False:
             self.enableallbutton.hide()
-
-        if self.reloadflag == 1:
-            print("Reload")
-            self.killdynamicbuttongroup()
-            self.getallDevs()
-            self.reloadflag = 2
-
-        if self.reloadflag == 2:
-            # The layout should be minimal, so make it unrealistically small (x=10, y=10 [px]) and then resize to minimum.
-            self.setMaximumSize(10,10)
-            self.resize(self.sizeHint().width(), self.sizeHint().height())
-            self.reloadflag = 0
+        # Remove all control buttons
+        self.killdynamicbuttongroup()
+        # Construct all control buttons
+        self.getallDevs()
+        # The layout should be minimal, so make it unrealistically small (x=10, y=10 [px]) and then resize to minimum.
+        self.setMaximumSize(10,10)
+        self.resize(self.sizeHint().width(), self.sizeHint().height())
 
 class listbtnGUI(QtGui.QDialog):
+    # This is the class in which the Edit DynaGUI window is constructed
     def __init__(self, parent = Dialog):
+        # Initialize the parameters needed for this window
         super(listbtnGUI, self).__init__(parent)
         self.parent = parent
-        self.setWindowTitle("Edit DynaGUI TF")
-        listgui = QtGui.QFormLayout(self)
-
-        devslbl = QtGui.QLabel("List of devices::")
+        # Only the widgets which require the parent parameters are constructed here
         self.textboxDevs = QtGui.QPlainTextEdit('\n'.join(parent.devlist))
-
-        attrlbl = QtGui.QLabel("List of device attributes:")
         self.textboxAttr = QtGui.QPlainTextEdit('\n'.join(parent.listofattributes))
-
-        rowslbl = QtGui.QLabel("Max. number of rows:")
         self.textboxRows = QtGui.QSpinBox()
         self.textboxRows.setValue(parent.Nrows)
-
         self.showhideenableallbtn = QtGui.QCheckBox("Show the 'Enable All' button")
         self.showhideenableallbtn.setChecked(parent.showallhideflag)
-
+        # Create the window layout
+        self.createLayout()
+    def createLayout(self):
+        # Create the window layout
+        self.setWindowTitle("Edit DynaGUI TF")
+        listgui = QtGui.QFormLayout(self)
+        devslbl = QtGui.QLabel("List of devices::")
+        attrlbl = QtGui.QLabel("List of device attributes:")
+        rowslbl = QtGui.QLabel("Max. number of rows:")
         okbtn = QtGui.QPushButton('Ok')
         nobtn = QtGui.QPushButton('Cancel')
         listgui.addRow(devslbl)
@@ -376,35 +369,33 @@ class listbtnGUI(QtGui.QDialog):
         listgui.addRow(okbtn, nobtn)
         okbtn.clicked.connect(self.confirmfunc)
         nobtn.clicked.connect(self.cancelfunc)
-
     def confirmfunc(self):
+        # All values defined in the edit window are sent to the parent as is
         textDevs = str(self.textboxDevs.toPlainText())
         self.newlistDevs = textDevs.split()
-
         if self.parent.showallhideflag != self.showhideenableallbtn.isChecked():
             self.parent.showallhideflag = self.showhideenableallbtn.isChecked()
             self.parent.reloadflag = 2
-
         if self.parent.devlist != self.newlistDevs:
             self.parent.devlist = self.newlistDevs
             self.parent.reloadflag = 1
-
         textAtts = str(self.textboxAttr.toPlainText())
         self.newlistAtts = textAtts.split()
         self.parent.listofattributes = self.newlistAtts
-
         if self.parent.Nrows != self.textboxRows.value():
             self.parent.Nrows = self.textboxRows.value()
             self.parent.reloadflag = 1
-
+        # Then close the window
         self.close()
-
     def cancelfunc(self):
+        # Just close the window
         self.close()
 
 if __name__ == '__main__':
+    # The GUI has been launched, check control library package (argv 1)
+    ctrl_library = sys.argv[1]
+    # Check if a saved configuration file is defined and if so, load it
     try:
-        ctrl_library = sys.argv[1]
         inp = sys.argv[2]
     except:
         inp = 0
@@ -419,6 +410,7 @@ if __name__ == '__main__':
         import random
     else:
         goflag = 0
+    # All seems to be fine so start the GUI
     if goflag == 1:
         window = Dialog(inp,ctrl_library)
         window.show()
