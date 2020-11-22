@@ -5,7 +5,6 @@ channels:
   - nodefaults
 dependencies:
   - python
-  - boost-py
   - jsonschema
   - matplotlib
   - numexpr
@@ -17,3 +16,6 @@ dependencies:
   - pyqtgraph
   - pytango
   - requests
+  - pip
+  - pip:
+    - boost-py
