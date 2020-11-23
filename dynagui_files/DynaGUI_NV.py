@@ -16,7 +16,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-# Import all needed Python packages
+
+# Import PyQt5 or PyQt4
 try:
     import PyQt5.QtWidgets as QtGui
     import PyQt5.QtGui as QtGui2
@@ -25,10 +26,10 @@ except:
     from PyQt4 import QtCore, QtGui
 
 class Dialog(QtGui.QWidget):
-    # The QWidget Class GUI for the main view
+    """The QWidget Class GUI for the main view """
     def __init__(self, ctrl_library, inp, parent=None):
-        # Initialization of the GUI with a control library and an input
-        # Inp = 0 --> No file to load, Inp = string --> file to load
+        """Initialization of the GUI with a control library and an input:
+        Inp = 0 --> No file to load, Inp = string --> file to load """
         super(Dialog, self).__init__(parent)
         QtGui.QDialog.__init__(self)
         self.setWindowTitle("DynaGUI NV - "+str(ctrl_library))
@@ -194,7 +195,7 @@ class Dialog(QtGui.QWidget):
         self.getallDevs()
 
     def savebtnclicked(self):
-        # To save the configuration
+        """Btn clicked to save the configuration """
         nameoffile = QtGui.QFileDialog.getSaveFileName(self, 'Save to File', "", "DynaGUI NV file (*.dg2)")[0]
         if not nameoffile:
             self.bottomlabel.setText("Cancelled save configuration.")
@@ -216,7 +217,7 @@ class Dialog(QtGui.QWidget):
             self.bottomlabel.setToolTip("Saved configuation to file: "+nameoffile)
 
     def loadbtnclicked(self):
-        # Select what file to load and run the loadfile command with the name of the file
+        """Select what file to load and run the loadfile command with the name of the file. """
         nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File')[0]
         if not nameoffile:
             self.bottomlabel.setText("Cancelled loading configuration.")
@@ -224,10 +225,7 @@ class Dialog(QtGui.QWidget):
             self.loadfile(nameoffile,0)
 
     def loadfile(self,nameoffile,inp2):
-        # The actual loading of the file, inputs are name of file and a boolean
-        # stating if the function is called during start-up of the GUI (=1) or
-        # if it has been called by the load file button (0), in which case there
-        # are dynamic objects in the GUI which have to be removed (incl. refs)
+        """The actual loading of the file, inputs are name of file and a boolean stating if the function is called during start-up of the GUI (=1) or if it has been called by the load file button (0), in which case there are dynamic objects in the GUI which have to be removed (incl. refs). """
         file = open(nameoffile, 'r')
         splitToLoad = file.read()
         splitToLoad = splitToLoad.split("##IamYourSeparator##")
@@ -278,7 +276,7 @@ class Dialog(QtGui.QWidget):
                 self.bottomlabel.setText("Not a DynaGUI file - missing identifier.")
 
     def killdynamicbuttongroup(self):
-        # Destroy all objects currently constructed in the buttongroup.
+        """Destroy all objects currently constructed in the buttongroup."""
         if self.ctrl_library == "EPICS":
             self.bottomlabel.setText(str("Loading defined PV statuses..."))
         elif self.ctrl_library == "Finance":
@@ -297,8 +295,7 @@ class Dialog(QtGui.QWidget):
             button.deleteLater()
 
     def getallDevs(self):
-        # This function is made to get all the devices defined and construct the
-        # dynamic buttongroup with connections to all device.
+        """This function is made to get all the devices defined and construct the dynamic buttongroup with connections to all device."""
 
         # Construct all necessary buttons
         rowcount = -1
@@ -351,7 +348,7 @@ class Dialog(QtGui.QWidget):
         self.statuscheck()
 
     def statuscheck(self):
-        # Get the status/value of an attribute for all defined elements
+        """Get the status/value of an attribute for all defined elements."""
         self.maxsize = 0
         TaurusList = []
         for bval,item in enumerate(self.buttonGroup.buttons()):
@@ -548,8 +545,7 @@ class Dialog(QtGui.QWidget):
         self.resize(self.sizeHint().width(), self.sizeHint().height())
 
     def getAllAttsClicked(self):
-        # This function gets all the variables associated with an element and
-        # populates the attributes combobox.
+        """This function gets all the variables associated with an element and populates the attributes combobox."""
         dev_ids = []
         valid_devs = []
         valid_attr_names = []
@@ -588,7 +584,7 @@ class Dialog(QtGui.QWidget):
         self.resize(self.sizeHint().width(), self.sizeHint().height())
 
     def plotin2D(self):
-        # Function that prepares all data from the GUI for being plotted in 2D
+        """Function that prepares all data from the GUI for being plotted in 2D."""
         TaurusList = []
         DevsNames = []
         if self.ctrl_library == "Tango":
@@ -651,7 +647,7 @@ class Dialog(QtGui.QWidget):
                 spectro.show()
 
     def plotin1D(self):
-        # Function that prepares all data from the GUI for being plotted in 1D
+        """Function that prepares all data from the GUI for being plotted in 1D."""
         TaurusList = []
         DevsNames = []
         if self.ctrl_library == "Tango":
@@ -710,8 +706,7 @@ class Dialog(QtGui.QWidget):
                 lt.show()
 
     def handleButtonClicked(self,button):
-        # This launches a control/details panel for the element that the button
-        # clicked represents.
+        """This launches a control/details panel for the element that the button clicked represents."""
         for item in self.buttonGroup.buttons():
             if button is item:
                 if item.palette().button().color().name() == "#800000":
@@ -748,7 +743,7 @@ class Dialog(QtGui.QWidget):
                         QtGui.QMessageBox.information(self,"Control panel", "EPICS device control and/or information panel is currently empty")
 
     def wildcardsImportClicked(self):
-        # This launches a separate window in which user can import elements using wildcards.
+        """This launches a separate window in which user can import elements using wildcards."""
         wildGUI = wildcardsGUI(self)
         wildGUI.setModal(True)
         wildGUI.exec_()
@@ -775,7 +770,7 @@ class Dialog(QtGui.QWidget):
             self.reloadflag = 0
 
     def listbtnclicked(self):
-        # This launches a GUI in which all elements, attributes and relevant GUI settings can be edited.
+        """This launches a GUI in which all elements, attributes and relevant GUI settings can be edited."""
         listGui = listbtnGUI(self)
         listGui.setModal(True)
         listGui.exec_()
@@ -815,14 +810,12 @@ class Dialog(QtGui.QWidget):
             self.reloadflag = 0
 
     def resizeDynaGUI(self):
-        #
+        """This function resizes the GUI to the minimum possible size."""
         self.setMaximumSize(10,10)
         self.resize(self.sizeHint().width(), self.sizeHint().height())
 
     def closeEvent(self, event):
-        # This is called when an attempt to quit DynaGUI is performed. A
-        # QMessageBox prompts the user to confirm closing the GUI in order to
-        # prevent losing data if this was called by mistake.
+        """This is called when an attempt to quit DynaGUI is performed. A QMessageBox prompts the user to confirm closing the GUI in order to prevent losing data if this was called by mistake."""
         reply = QtGui.QMessageBox.question(self, 'Exit', 'Are you sure you want to exit? All unsaved data will be lost.', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
         if reply == QtGui.QMessageBox.Yes:
             event.accept()
@@ -831,10 +824,9 @@ class Dialog(QtGui.QWidget):
             event.ignore()
 
 class listbtnGUI(QtGui.QDialog):
-    # This is the QDialog class for a separate GUI in which elements and
-    # attributes are edited together with other associated settings.
+    """This is the QDialog class for a separate GUI in which elements and attributes are edited together with other associated settings."""
     def __init__(self, parent = Dialog):
-        # Initializing the GUI; set up layout and import parameters from parent
+        """Initializing the GUI; set up layout and import parameters from parent."""
         super(listbtnGUI, self).__init__(parent)
         self.parent = parent
         self.setWindowTitle("Edit DynaGUI NV")
@@ -873,8 +865,7 @@ class listbtnGUI(QtGui.QDialog):
         nobtn.clicked.connect(self.cancelfunc)
 
     def confirmfunc(self):
-        # Confirmed that the settings should be appliced to the parent GUI and
-        # this GUI is then closed.
+        """Confirmed that the settings should be appliced to the parent GUI and this GUI is then closed."""
         textDevs = str(self.textboxDevs.toPlainText())
         self.newlistDevs = textDevs.split()
 
@@ -919,14 +910,13 @@ class listbtnGUI(QtGui.QDialog):
         self.close()
 
     def cancelfunc(self):
-        # Close this GUI and return to parent without chaning anything.
+        """Close this GUI and return to parent without sending any data back."""
         self.close()
 
 class wildcardsGUI(QtGui.QDialog):
-    # This is the QDialog class for a separate GUI in which elements can be
-    # imported using wildcards.
+    """This is the QDialog class for a separate GUI in which elements can be imported using wildcards."""
     def __init__(self, parent = Dialog):
-        # Initializing the GUI; set up layout and import parameters from parent
+        """Initializing the GUI; set up layout and import parameters from parent."""
         super(wildcardsGUI, self).__init__(parent)
         self.parent = parent
         text,ok = QtGui.QInputDialog.getText(self,"Get devices","Define wildcards",text="lebt*sol*curr")
@@ -980,8 +970,7 @@ class wildcardsGUI(QtGui.QDialog):
         self.setLayout(listgui)
 
     def confirmfunc(self):
-        # Confirmed that the settings should be appliced to the parent GUI and
-        # this GUI is then closed.
+        """Confirmed that the settings should be appliced to the parent GUI and this GUI is then closed."""
         textDevs = str(self.textboxDevs.toPlainText())
         self.newlistDevs = textDevs.split()
         noflag = 0
@@ -1001,20 +990,20 @@ class wildcardsGUI(QtGui.QDialog):
             self.close()
 
     def cancelfunc(self):
-        # Close this GUI and return to parent without chaning anything.
+        """Close this GUI and return to parent without chaning anything."""
         self.close()
 
 class Surfogram(QtGui.QDialog):
-    # This is a QDialog class with a separate GUI in which a 3D plot is invoced.
+    """This is a QDialog class with a separate GUI in which a 3D plot is invoced."""
     def __init__(self, parent = Dialog):
+        """Initializing the GUI; set up layout and import parameters from parent."""
         super(Surfogram, self).__init__(parent)
         pg.opengl.GLSurfacePlotItem # Future contour (3D) plotting
 
 class prep1DGUI(QtGui.QDialog):
-    # This is the QDialog class for a separate GUI in which a 1D plot is
-    # being prepared.
+    """This is the QDialog class for a separate GUI in which a 1D plot is being prepared."""
     def __init__(self, parent = Dialog):
-        # Initializing the GUI; set up layout and import parameters from parent
+        """Initializing the GUI; set up layout and import parameters from parent."""
         super(prep1DGUI, self).__init__(parent)
         self.parent = parent
         self.setWindowTitle("Setup 1D plotting")
@@ -1044,23 +1033,21 @@ class prep1DGUI(QtGui.QDialog):
         nobtn.clicked.connect(self.cancelfunc)
 
     def confirmfunc(self):
-        # Confirmed that the settings should be appliced to the 1D plot, launch
-        # the 1D plot GUI and this GUI is then closed.
+        """Confirmed that the settings should be appliced to the 1D plot, launch the 1D plot GUI and this GUI is then closed."""
         self.parent.toSpecminutes = self.textboxM.value()
         self.parent.toSpecupdateFrequency = self.textboxF.value()
         self.parent.okflag = 1
         self.close()
 
     def cancelfunc(self):
-        # Close this GUI and do not launch the 1D plot, return to main GUI.
+        """Close this GUI and do not launch the 1D plot, return to main GUI."""
         self.parent.okflag = 0
         self.close()
 
 class prep2DGUI(QtGui.QDialog):
-    # This is the QDialog class for a separate GUI in which a 2D plot is
-    # being prepared.
+    """This is the QDialog class for a separate GUI in which a 2D plot is being prepared."""
     def __init__(self, parent = Dialog):
-        # Initializing the GUI; set up layout and import parameters from parent
+        """Initializing the GUI; set up layout and import parameters from parent."""
         super(prep2DGUI, self).__init__(parent)
         self.parent = parent
         self.setWindowTitle("Setup 2D spectrogram plotting")
@@ -1084,22 +1071,21 @@ class prep2DGUI(QtGui.QDialog):
         nobtn.clicked.connect(self.cancelfunc)
 
     def confirmfunc(self):
-        # Confirmed that the settings should be appliced to the 2D plot, launch
-        # the 2D plot GUI and this GUI is then closed.
+        """Confirmed that the settings should be appliced to the 2D plot, launch the 2D plot GUI and this GUI is then closed."""
         self.parent.toSpecminutes = self.textboxM.value()
         self.parent.toSpecupdateFrequency = self.textboxF.value()
         self.parent.okflag = 1
         self.close()
 
     def cancelfunc(self):
-        # Close this GUI and do not launch the 2D plot, return to main GUI.
+        """Close this GUI and do not launch the 2D plot, return to main GUI."""
         self.parent.okflag = 0
         self.close()
 
 class Spectrogram(QtGui.QDialog):
-    # The GUI for the 2D plotting view
+    """The GUI for the 2D plotting view."""
     def __init__(self, parent = Dialog):
-
+        """Initializing the GUI; set up layout and import parameters from parent."""
         super(Spectrogram, self).__init__(parent)
         self.ctrl_library = parent.ctrl_library
         self.parent = parent
@@ -1207,7 +1193,7 @@ class Spectrogram(QtGui.QDialog):
         self.t.start(int(1000/self.updateFrequency))
 
     def editcm(self):
-        # Opens up a dialog to select which CM colour to edit (1-3 : 0 value, mid-value, high-value)
+        """Opens up a dialog to select which CM colour to edit (1-3 : 0 value, mid-value, high-value)."""
         items = ("CM1","CM2","CM3")
         item,ok = QtGui.QInputDialog.getItem(self,"Edit CM:s","Select CM #:",items,0,False)
         if ok and item:
@@ -1224,7 +1210,7 @@ class Spectrogram(QtGui.QDialog):
         self.img.setLookupTable(lut)
 
     def getcm(self,cmin,cmt):
-        # The function that launches a colour map editing widget for one of the three colour map colours
+        """The function that launches a colour map editing widget for one of the three colour map colours"""
         cmtxt = []
         for n in cmin:
             cmtxt.append(str(n))
@@ -1240,21 +1226,18 @@ class Spectrogram(QtGui.QDialog):
             return cmin
 
     def plotvsstored(self):
-        # Determines if values plotted are raw values (plotting real values) or
-        # if a stored value is substracted (plotting vs stored)
+        """Determines if values plotted are raw values (plotting real values) or if a stored value is substracted (plotting vs stored)."""
         if str(self.plotvsstoredbtn.text()) == 'Plotting vs stored':
             self.plotvsstoredbtn.setText('Plotting real values')
         elif str(self.plotvsstoredbtn.text()) == 'Plotting real values':
             self.plotvsstoredbtn.setText('Plotting vs stored')
 
     def updateRefImage(self):
-        # The values to substract from the raw values are stored at this
-        # instance and used when plotting vs stored
+        """The values to substract from the raw values are stored at this instance and used when plotting vs stored."""
         self.refarr = self.plotarr[int(self.tSize-1),:]
 
     def plotTrace(self): # From JonPet
-        # A vertical trace line is shown on the 2D plot which can be moved along
-        # the time-axis (x- or horizontal axis)
+        """A vertical trace line is shown on the 2D plot which can be moved along the time-axis (x- or horizontal axis)."""
         fig = plt.figure()
         i = round(float(self.isoV.value()))
         if i == self.tSize:
@@ -1272,9 +1255,7 @@ class Spectrogram(QtGui.QDialog):
         plt.show()
 
     def onpick(self, event): # From JonPet
-        # Get the values behind the vertical trace line and plot them as a 1D
-        # plot (with the horizontal axis showing the element index and the
-        # vertical axis showing the intensity/value of the element)
+        """Get the values behind the vertical trace line and plot them as a 1D plot (with the horizontal axis showing the element index and the vertical axis showing the intensity/value of the element)."""
         thisline = event.artist
         xdata = thisline.get_xdata()
         ydata = thisline.get_ydata()
@@ -1293,8 +1274,7 @@ class Spectrogram(QtGui.QDialog):
         event.canvas.draw()
 
     def moveLine(self): # From JonPet
-        # The function that stores the horizontal position (time) of the
-        # vertical trace line when it is moved
+        """The function that stores the horizontal position (time) of the vertical trace line when it is moved."""
         val = round(float(self.isoV.value()))
         if val < 0:
             self.isoV.setPos(0.0)
@@ -1302,7 +1282,7 @@ class Spectrogram(QtGui.QDialog):
             self.isoV.setPos(self.tSize)
 
     def pauseclicked(self):
-        # A function that starts or stops the 2D plot data acquisition
+        """A function that starts or stops the 2D plot data acquisition."""
         if self.pausebtn.text() == 'Pause':
             self.pausebtn.setText("Run")
             self.t.stop()
@@ -1311,8 +1291,7 @@ class Spectrogram(QtGui.QDialog):
             self.t.start()
 
     def update(self):
-        # The function that polls the values from all elements and puts them
-        # into the 2D plot
+        """The function that polls the values from all elements and puts them into the 2D plot."""
         self.plotarr = np.roll(self.plotarr, -1, 0)
         y = []
         for ind, inp in enumerate(self.sensorNames):
@@ -1348,9 +1327,7 @@ class Spectrogram(QtGui.QDialog):
             self.img.setImage(np.abs(self.plotarr), autoLevels=False)
 
     def closeEvent(self, event):
-        # This is called when an attempt to quit the 2D plot is performed. A
-        # QMessageBox prompts the user to confirm closing the GUI in order to
-        # prevent losing data if this was called by mistake.
+        """This is called when an attempt to quit the 2D plot is performed. A QMessageBox prompts the user to confirm closing the GUI in order to prevent losing data if this was called by mistake."""
         reply = QtGui.QMessageBox.question(self, 'Exit', 'Are you sure you want to exit? All unsaved data will be lost.', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
         if reply == QtGui.QMessageBox.Yes:
             event.accept()
@@ -1360,9 +1337,9 @@ class Spectrogram(QtGui.QDialog):
             event.ignore()
 
 class PyQtGraphPlotter(QtGui.QMainWindow):
-    # The 1D plotting view part of the 1D plotting GUI
+    """The 1D plotting view part of the 1D plotting GUI."""
     def __init__(self, parent = Dialog):
-        # Initializing the GUI; set up layout and import parameters from parent
+        """Initializing the GUI; set up layout and import parameters from parent."""
         super(PyQtGraphPlotter, self).__init__(parent)
         self.ctrl_library = parent.ctrl_library
         self.parent = parent
@@ -1445,7 +1422,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             self.loadclick()
 
     def showhideall(self):
-        # A function to show or hide all lines
+        """A function to show or hide all the lines in the plot."""
         if self.contWidget.hideshowallbtn.text() == "Hide All":
             self.contWidget.hideshowallbtn.setText("Show All")
             for chBox in self.contWidget.chGroupBox.findChildren(QtGui.QCheckBox):
@@ -1456,7 +1433,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                 chBox.setChecked(True)
 
     def showhidelegend(self):
-        # A function to show or hide the legends widget group
+        """A function to show or hide the legends widget group."""
         if self.contWidget.showhidelegends.text() == "Hide legend":
             self.contWidget.showhidelegends.setText("Show legend")
             self.scrollarea.setVisible(False)
@@ -1465,7 +1442,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             self.scrollarea.setVisible(True)
 
     def colorbtnRGBchange(self,inp):
-        # A function to change the colour of a line in the plot
+        """A function to change the colour of a line in the plot."""
         prevsetting = self.colorind[int(inp)]
         prevset = ', '.join(str(x) for x in prevsetting)
         text,ok = QtGui.QInputDialog.getText(self,"Set linecolor","Define the color of the line in [R,G,B] format:",text=prevset)
@@ -1493,7 +1470,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                 QtGui.QMessageBox.information(self,"Error",'Incorrect N of inputs')
 
     def chBoxCheck(self):
-        # A function to check which lines to show and which not to
+        """A function to check which lines to show and which not to."""
         devsPlotting = []
         devs_original = len(self.data_x0)
         for ind,chBox in enumerate(self.contWidget.chGroupBox.findChildren(QtGui.QCheckBox)):
@@ -1521,9 +1498,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
         self.devsPlotting = devsPlotting
 
     def funccalculator(self,linenum,equation,nn):
-        # Calculates a mathematical function by looking at which line to
-        # calculate a new value for, the equation itself, and the datapoint of
-        # the line (the point in time)
+        """Calculates a mathematical function by looking at which line to calculate a new value for, the equation itself, and the datapoint of the line (the point in time)."""
         if equation == 'none':
             outputval = 0
         else:
@@ -1553,8 +1528,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
         return outputval
 
     def listInit(self):
-        # Initialize the datapoint arrays by getting one datapoint per element
-        # until plotting is started
+        """Initialize the datapoint arrays by getting one datapoint per element until plotting is started."""
         self.data_x0 = []
         self.curve = []
         self.data_y = []
@@ -1588,8 +1562,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             self.devsPlotting.append(1)
 
     def updater(self):
-        # The function that polls the values from all elements and puts them
-        # into the 1D plot
+        """The function that polls the values from all elements and puts them into the 1D plot."""
         if self.archivemode == 0:
             maxval = 0
             maxvallbl = -1
@@ -1631,8 +1604,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             self.contWidget.graphlbl1.setText("Maximum value / from PV:\n"+str("{0:.10f}".format(maxval))+" / "+str(maxvallbl))
 
     def update_userlist(self):
-        # Datapoints can be moved in time. This function returns the locations
-        # in time (a.k.a. timestamps) for all the lines in the plot
+        """Datapoints can be moved in time. This function returns the locations in time (a.k.a. timestamps) for all the lines in the plot."""
         timestamps = []
         for n in range(len(self.data_ydesc)):
             val = self.funccalculator(n,self.equations[n],len(self.data_y0[n])-1)
@@ -1651,7 +1623,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
         return timestamps
 
     def reset(self):
-        # This function clears all the collected data in this GUI session
+        """This function clears all the collected data in this GUI session."""
         reply = QtGui.QMessageBox.question(self, 'Reset, clear', 'Are you sure you want to clear all data? All plotting data will be lost.', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
         if reply == QtGui.QMessageBox.Yes:
             del self.data_x0
@@ -1670,9 +1642,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                 self.data_y0.append([0])
 
     def PlotSettings(self):
-        # Function that launches the PyQt graph settings GUI and if Ok pressed
-        # in that GUI, this function will update this 1D plot GUI session with
-        # the settings as defined
+        """Function that launches the PyQt graph settings GUI and if Ok pressed in that GUI, this function will update this 1D plot GUI session with the settings as defined."""
         self.okflag = 0
         if self.pyqtgraphtimer.isActive():
             activeflag = 1
@@ -1702,7 +1672,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                 self.pyqtgraphtimer.start(1000/self.updateFrequency)
 
     def createLineDict(self):
-        # This function is used for setting up all the plot lines properly (incl. removing if some are to be removed) after confirming new plot settings
+        """This function is used for setting up all the plot lines properly (incl. removing if some are to be removed) after confirming new plot settings."""
         if len(self.rmvList) > 1:
             self.rmvList.sort()
         for m in reversed(range(len((self.rmvList)))):
@@ -1720,8 +1690,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             self.curve.append(self.contWidget.plot.getPlotItem().plot(name=self.data_ydesc[n]))
 
     def constructLegendItem(self):
-        # This function constructs graphical and interactive legend objects for
-        # all the lines in the plot
+        """This function constructs graphical and interactive legend objects for all the lines in the plot."""
         rowcount = -1
         colcount = 0
         maxrows = 20
@@ -1796,8 +1765,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             chBox.setMinimumWidth(self.maxwidth+50)
 
     def killdynamiclegendgroup(self):
-        # This function removes all the graphical and interactive legend objects
-        # for all the lines in the plot
+        """This function removes all the graphical and interactive legend objects for all the lines in the plot."""
         for i in reversed(range(self.ch_sublayout.count())):
             item = self.ch_sublayout.itemAt(i)
             if isinstance(item, QtGui.QWidgetItem):
@@ -1808,9 +1776,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             button.deleteLater()
 
     def acceptNewPlotSettings(self):
-        # This function checks if the horizontal axis is to be rescaled after
-        # confirming new plot settings for the lines, and if the equations are
-        # to be applied to all previous (raw) datapoints as well for all lines
+        """This function checks if the horizontal axis is to be rescaled after confirming new plot settings for the lines, and if the equations are to be applied to all previous (raw) datapoints as well for all lines."""
         reply = QtGui.QMessageBox.question(self, 'Rescaling', 'Rescale horizontal axis?', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
         if reply == QtGui.QMessageBox.Yes:
             self.contWidget.plot.setXRange(-60 * 1.01 * self.minutes,0)
@@ -1828,7 +1794,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                 data_y = []
 
     def loadclick(self):
-        # This function loads data from a file or a database/server
+        """This function loads data from a file or a database/server."""
         items = ['From DataBase', 'From File']
         dlg = QtGui.QInputDialog(self)
         item, ok = QtGui.QInputDialog.getItem(self, 'Loadtype', 'Select where to load data from:',items, 0, False)
@@ -2068,9 +2034,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
                                 plotW.showGrid(x=True,y=True)
 
     def saveclick(self):
-        # This function saves the current values (incl. user-defined timestamps
-        # and user-defined function values) in the plot to a file. Lines that
-        # are not shown in the plot are not included.
+        """This function saves the current values (incl. user-defined timestamps and user-defined function values) in the plot to a file. Lines that are not shown in the plot are not included."""
         options = QtGui.QFileDialog.Options()
         options |= QtGui.QFileDialog.DontUseNativeDialog
         fileName = QtGui.QFileDialog.getSaveFileName(self, 'Save to File',"","DynaGUI plot files (*.dgplot)", options=options)[0]
@@ -2083,7 +2047,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             file0.close()
 
     def startstop(self):
-        # A function that starts or stops the 2D plot data acquisition
+        """A function that starts or stops the 2D plot data acquisition."""
         self.archivemode = 0
         if self.contWidget.plotbtn.text() == 'Start Plotting':
             self.contWidget.plotbtn.setText('Stop Plotting')
@@ -2100,9 +2064,7 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             self.pyqtgraphtimer.stop()
 
     def closeEvent(self, event):
-        # This is called when an attempt to quit the 1D plot is performed. A
-        # QMessageBox prompts the user to confirm closing the GUI in order to
-        # prevent losing data if this was called by mistake.
+        """This is called when an attempt to quit the 1D plot is performed. A QMessageBox prompts the user to confirm closing the GUI in order to prevent losing data if this was called by mistake."""
         reply = QtGui.QMessageBox.question(self, 'Exit', 'Are you sure you want to exit? All plotting data will be lost.', QtGui.QMessageBox.Yes,QtGui.QMessageBox.No)
         if reply == QtGui.QMessageBox.Yes:
             event.accept()
@@ -2112,10 +2074,9 @@ class PyQtGraphPlotter(QtGui.QMainWindow):
             event.ignore()
 
 class ArchiverCalendarWidget(QtGui.QDialog):
-    # The GUI class for two calendars (start and end-date and -time) activated
-    # when loading historical data in the 1D plot
+    """The GUI class for two calendars (start and end-date and -time) activated when loading historical data in the 1D plot."""
     def __init__(self, parent = PyQtGraphPlotter):
-        # Initializing the GUI; import parameters from parent
+        """Initializing the GUI; import parameters from parent."""
         super(ArchiverCalendarWidget, self).__init__(parent)
         self.parent = parent
 
@@ -2124,7 +2085,7 @@ class ArchiverCalendarWidget(QtGui.QDialog):
         self.initUI()
 
     def initUI(self):
-        # Initializing the GUI; set up layout
+        """Initializing the GUI; set up layout."""
         layout = QtGui.QGridLayout()
         self.cal1 = QtGui.QCalendarWidget(self)
         self.cal2 = QtGui.QCalendarWidget(self)
@@ -2192,14 +2153,14 @@ class ArchiverCalendarWidget(QtGui.QDialog):
         self.setLayout(layout)
 
     def showDate1(self, date):
-        # Gets the date from calendar 1 (start-date)
+        """Gets the date from calendar 1 (start-date)."""
         self.startdate = date
         self.flag0 = 0
         if self.flag1 == 0:
             self.okbtn.setEnabled(True)
 
     def showDate2(self, date):
-        # Gets the date from calendar 2 (end-date)
+        """Gets the date from calendar 2 (end-date)."""
         self.enddate = date
         self.cal1.setMaximumDate(date)
         self.flag1 = 0
@@ -2207,7 +2168,7 @@ class ArchiverCalendarWidget(QtGui.QDialog):
             self.okbtn.setEnabled(True)
 
     def okclicked(self):
-        # Calendar dates have been defined; return the start and end date and time to the parent GUI and close this GUI
+        """Calendar dates have been defined; return the start and end date and time to the parent GUI and close this GUI."""
         self.parent.startdate = self.startdate.toPyDate()
         self.parent.enddate = self.enddate.toPyDate()
         self.parent.starttime = datetime.datetime.strptime(str(str(self.starttimeHH.value())+":"+str(self.starttimeMM.value())+":"+str(self.starttimeSS.value())),'%H:%M:%S').time()
@@ -2216,15 +2177,14 @@ class ArchiverCalendarWidget(QtGui.QDialog):
         self.close()
 
     def cancelclicked(self):
-        # Close this GUI and return no dates at all, ok flag is set as 0 so
-        # parent GUI knows that there are no calendar dates and time defined
+        """Close this GUI and return no dates at all, ok flag is set as 0 so parent GUI knows that there are no calendar dates and time defined."""
         self.parent.okflag = 0
         self.close()
 
 class PyQtGraphSetup(QtGui.QDialog):
-    # This is the QDialog class for the 1D plot GUI's settings
+    """This is the QDialog class for the 1D plot GUI's settings."""
     def __init__(self, parent = PyQtGraphPlotter):
-        # Initializing the GUI; set up layout and import parameters from parent
+        """Initializing the GUI; set up layout and import parameters from parent."""
         super(PyQtGraphSetup, self).__init__(parent)
         self.parent = parent
         self.setWindowTitle("Settings")
@@ -2297,7 +2257,7 @@ class PyQtGraphSetup(QtGui.QDialog):
         nobtn.clicked.connect(self.cancelfunc)
 
     def generatePVsTab(self):
-        # Set up tab 1, which contains (raw) PV:s only
+        """Set up tab 1, which contains (raw) PV:s only."""
         self.eq_1_ChBoxGroup = QtGui.QGroupBox()
         self.eq_1_layout = QtGui.QGridLayout()
         self.eq_1_layout.addWidget(self.eq_1_ChBoxGroup)
@@ -2327,7 +2287,7 @@ class PyQtGraphSetup(QtGui.QDialog):
         self.tab1.setLayout(self.tabgridL1)
 
     def generateFunctionsTab(self):
-        # Set up tab 2, which contains user-defined PV functions only
+        """Set up tab 2, which contains user-defined PV functions only."""
         self.eq_2_ChBoxGroup = QtGui.QGroupBox()
         self.eq_2_layout = QtGui.QGridLayout()
         self.eq_2_layout.addWidget(self.eq_2_ChBoxGroup)
@@ -2357,11 +2317,11 @@ class PyQtGraphSetup(QtGui.QDialog):
         self.tab2.setLayout(self.tabgridL2)
 
     def equationChanged(self,index,equation):
-        # An equation has been changed, store it in the main array of the GUI
+        """An equation has been changed, store it in the main array of the GUI."""
         self.equations[index] = equation.text()
 
     def addnewline(self):
-        # Adds a new user-defined line
+        """Adds a new user-defined line."""
         text1,ok1 = QtGui.QInputDialog.getText(self,"New Line","Define the name of the new line:")
         if ok1 and text1:
             if text1 in self.data_ydesc:
@@ -2376,7 +2336,7 @@ class PyQtGraphSetup(QtGui.QDialog):
                     self.generateFunctionsTab()
 
     def removeline(self):
-        # Removes a user-defined line
+        """Removes a user-defined line."""
         items = self.data_ydesc
         if len(items) > 0:
             item,ok = QtGui.QInputDialog.getItem(self,"Remove lines","Which lines?",items,0,False)
@@ -2401,16 +2361,16 @@ class PyQtGraphSetup(QtGui.QDialog):
                 self.generateFunctionsTab()
 
     def helpclicked(self):
-        # Opens up an explanation for how to use the GUI
+        """Opens up an explanation for how to use the GUI."""
         QtGui.QMessageBox.information(self,'Help','RV means readvalue.')
 
     def mathfunctionslist(self):
-        # Returns all pre-defined mathematical functions
+        """Returns all pre-defined mathematical functions."""
         funcs = "\n".join(self.get_all_functions_from_module(math).keys())
         QtGui.QMessageBox.information(self,'Mathematical Functions', 'Pre-defined mathematical functions: \n\n'+funcs)
 
     def get_all_functions_from_module(self, module, functions={}):
-        # Returns all mathematical functions defined in Python 'math' package
+        """Returns all mathematical functions defined in Python 'math' package."""
         for f in math.__dict__:
           obj = getattr(math, f)
           if callable(obj):
@@ -2418,7 +2378,7 @@ class PyQtGraphSetup(QtGui.QDialog):
         return functions
 
     def testequations(self,equation):
-        # Ensures that the equation has been properly defined
+        """Ensures that the equation has been properly defined."""
         if equation == 'none':
             outputval = 0
         else:
@@ -2442,9 +2402,7 @@ class PyQtGraphSetup(QtGui.QDialog):
             numexpr.evaluate(das_equation)
 
     def confirmfunc(self):
-        # All values defined in this setup session are confirmed and settings
-        # are thus sent back to the parent GUI's configurations and this GUI is
-        # then closed
+        """All values defined in this setup session are confirmed and settings are thus sent back to the parent GUI's configurations and this GUI is then closed."""
         descriptions_y0 = []
         delays_y0 = []
         cols1 = int(len(self.eq_1_ChBoxGroup.findChildren(QtGui.QLineEdit)) / len(self.eq_1_ChBoxGroup.findChildren(QtGui.QDoubleSpinBox))) - 1
@@ -2501,15 +2459,14 @@ class PyQtGraphSetup(QtGui.QDialog):
             self.close()
 
     def cancelfunc(self):
-        # All values defined in this setup session are dismissed and this GUI is
-        # closed
+        """All values defined in this setup session are dismissed and this GUI is closed."""
         self.parent.okflag = 0
         self.close() # ???
 
 class PyQtGraphContainerWidget(QtGui.QWidget):
-    # The GUI containing the 1D plotting viewer
+    """The GUI containing the 1D plotting viewer."""
     def __init__(self, parent=None):
-        # Initializing the GUI; set up layout and import parameters from parent
+        """Initializing the GUI; set up layout and import parameters from parent."""
         super(PyQtGraphContainerWidget, self).__init__(parent)
         pg.setConfigOption('background','k')
         pg.setConfigOption('foreground','w')
@@ -2557,7 +2514,7 @@ class PyQtGraphContainerWidget(QtGui.QWidget):
         self.setLayout(self.layout)
 
 if __name__ == '__main__':
-    # import of all essential functions
+    """Import of all essential packages."""
     import os, platform, sys, time, datetime, fnmatch, numexpr, math
     import numpy as np
     import pyqtgraph as pg
@@ -2589,4 +2546,4 @@ if __name__ == '__main__':
     if goflag == 1:
         window = Dialog(ctrl_library,inp)
         window.show()
-        sys.exit(app.exec_()) # Works for all
+        sys.exit(app.exec_())

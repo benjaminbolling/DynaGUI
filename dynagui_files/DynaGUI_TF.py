@@ -16,18 +16,18 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-# Import all needed Python packages
+# Import PyQt5 or PyQt4
 try:
     import PyQt5.QtWidgets as QtGui
     from PyQt5 import QtCore
 except:
     from PyQt4 import QtCore, QtGui
-import time, sys, platform
+
 
 class Dialog(QtGui.QDialog):
-    # This is the class in which the DynaGUI window is constructed
+    """This is the class in which the DynaGUI window is constructed."""
     def __init__(self, inp, ctrl_library):
-        # Intialization of start-up parameters and Qt
+        """Intialization of start-up parameters and Qt."""
         QtGui.QDialog.__init__(self)
         self.setWindowTitle("DynaGUI TF")
         self.ctrl_library = ctrl_library
@@ -63,7 +63,7 @@ class Dialog(QtGui.QDialog):
         # Run the script for generating the dynamical buttons
         self.getallDevs()
     def createLayout(self):
-        # Create the layout of the widget.
+        """Create the layout of the widget."""
         # Construct the toplayout and make it stretchable
         self.toplayout = QtGui.QVBoxLayout(self)
         self.toplayout.addStretch()
@@ -120,7 +120,7 @@ class Dialog(QtGui.QDialog):
         self.toplayout.addWidget(self.updatebutton)
         self.toplayout.addWidget(self.enableallbutton)
     def savebtnclicked(self):
-        # Save the current configuration to a file
+        """Save the current configuration to a file."""
         nameoffile = QtGui.QFileDialog.getSaveFileName(self, 'Save to File', "", "DynaGUI TF files (*.dg1)")[0]
         if not nameoffile:
             self.bottomlabel.setText("Cancelled save configuration.")
@@ -132,14 +132,14 @@ class Dialog(QtGui.QDialog):
             self.bottomlabel.setText("Configuration saved to file.")
             self.bottomlabel.setToolTip("Saved configuation to file: "+nameoffile)
     def loadbtnclicked(self):
-        # The button was clicked to load a file
+        """The button was clicked to load a file."""
         nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File', "", "DynaGUI TF files (*.dg1)")[0]
         if not nameoffile:
             self.bottomlabel.setText("Cancelled loading configuration.")
         else:
             self.loadfile(nameoffile,0) # 0 means that there is data to be replaced
     def loadfile(self,nameoffile,inp2):
-        # Load a previously saved configuration
+        """Load a previously saved configuration."""
         file = open(nameoffile, 'r')
         splitToLoad = file.read()
         splitToLoad = splitToLoad.split("##IamYourSeparator##")
@@ -177,7 +177,7 @@ class Dialog(QtGui.QDialog):
             if inp2 == 0:
                 self.bottomlabel.setText("Not a DynaGUI file - missing identifier.")
     def enableallbuttonclicked(self):
-        # Set the attribute selected to true for all channels
+        """Set the attribute selected to true for all channels."""
         if ctrl_library == "Randomizer":
             self.devstat.clear()
         for item in self.buttonGroup.buttons():
@@ -197,7 +197,7 @@ class Dialog(QtGui.QDialog):
                 self.devstat.append(1)
         self.statuscheck()
     def killdynamicbuttongroup(self):
-        # Destroy / kill all buttons currently constructed in the buttongroup.
+        """Destroy / kill all buttons currently constructed in the buttongroup."""
         self.bottomlabel.setText(str("Loading " + str(self.listofattributeslistbox.currentText()) + " statuses..."))
         for i in reversed(range(self.sublayout.count())):
             item = self.sublayout.itemAt(i)
@@ -206,7 +206,7 @@ class Dialog(QtGui.QDialog):
         for button in self.groupBox.findChildren(QtGui.QPushButton):
             button.deleteLater()
     def getallDevs(self):
-        # Construct all necessary buttons
+        """Construct all necessary buttons."""
         self.BPMproxies = self.devlist
         rowcount = -1
         colcount = 0
@@ -233,7 +233,7 @@ class Dialog(QtGui.QDialog):
         # Get the statuses
         self.statuscheck()
     def statuscheck(self):
-        # Check status of the attribute for all channels
+        """Check status of the attribute for all channels."""
         if ctrl_library == "Randomizer":
             n = -1
         # Loop through all control buttons
@@ -271,7 +271,7 @@ class Dialog(QtGui.QDialog):
                 item.setStyleSheet('QPushButton {background-color: maroon; color: white}')
         self.bottomlabel.setText(str(str(self.listofattributeslistbox.currentText()) + " statuses loaded."))
     def handleButtonClicked(self,button):
-        # A control button has been clicked, input is the id of the button clicked
+        """A control button has been clicked, input is the id of the button clicked."""
         if ctrl_library == "Randomizer":
             n = -1
         # Begin by looping through all buttons
@@ -319,7 +319,7 @@ class Dialog(QtGui.QDialog):
                         else:
                             item.setStyleSheet('background-color: lime')
     def listbtnclicked(self):
-        # Launch the edit DynaGUI window
+        """Launch the edit DynaGUI window."""
         listGui = listbtnGUI(self)
         listGui.setModal(True)
         listGui.exec_()
@@ -339,9 +339,9 @@ class Dialog(QtGui.QDialog):
         self.resize(self.sizeHint().width(), self.sizeHint().height())
 
 class listbtnGUI(QtGui.QDialog):
-    # This is the class in which the Edit DynaGUI window is constructed
+    """This is the class in which the Edit DynaGUI window is constructed."""
     def __init__(self, parent = Dialog):
-        # Initialize the parameters needed for this window
+        """Initialize the parameters needed for this window."""
         super(listbtnGUI, self).__init__(parent)
         self.parent = parent
         # Only the widgets which require the parent parameters are constructed here
@@ -354,7 +354,7 @@ class listbtnGUI(QtGui.QDialog):
         # Create the window layout
         self.createLayout()
     def createLayout(self):
-        # Create the window layout
+        """Create the window layout."""
         self.setWindowTitle("Edit DynaGUI TF")
         listgui = QtGui.QFormLayout(self)
         devslbl = QtGui.QLabel("List of channels:")
@@ -372,7 +372,7 @@ class listbtnGUI(QtGui.QDialog):
         okbtn.clicked.connect(self.confirmfunc)
         nobtn.clicked.connect(self.cancelfunc)
     def confirmfunc(self):
-        # All values defined in the edit window are sent to the parent as is
+        """All values defined in the edit window are sent to the parent as is."""
         textDevs = str(self.textboxDevs.toPlainText())
         self.newlistDevs = textDevs.split()
         if self.parent.showallhideflag != self.showhideenableallbtn.isChecked():
@@ -390,11 +390,13 @@ class listbtnGUI(QtGui.QDialog):
         # Then close the window
         self.close()
     def cancelfunc(self):
-        # Just close the window, no values sent back
+        """Just close the window, no values sent back to parent."""
         self.parent.reloadflag = 0
         self.close()
 
 if __name__ == '__main__':
+    """Import of all essential packages."""
+    import time, sys, platform
     # The GUI has been launched, check control library package (argv 1)
     ctrl_library = sys.argv[1]
     # Check if a saved configuration file is defined and if so, load it
