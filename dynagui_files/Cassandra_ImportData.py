@@ -22,8 +22,9 @@ from datetime import datetime, timedelta
 import fnmatch, pytz
 
 class CassImp:
+    """This is the class for importing data from the Cassandra DataBase."""
     def __init__(self):
-        """Initialization of the Cassandra DataBase Import."""
+        """Initialization of the Cassandra DataBase import method."""
         self.datatimestamps = 0
         self.readvals = 0
         self.hdb_cluster = ['hdb-server-addr-0',
