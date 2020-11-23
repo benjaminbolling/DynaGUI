@@ -23,7 +23,7 @@ import fnmatch, pytz
 
 class CassImp:
     def __init__(self):
-
+        """Initialization of the Cassandra DataBase Import."""
         self.datatimestamps = 0
         self.readvals = 0
         self.hdb_cluster = ['hdb-server-addr-0',
@@ -32,12 +32,11 @@ class CassImp:
         self.hdb_name = "hdb-server-csdb-0"
 
     def attr_wildcard(self,wildcard):
+        """Return matches from wildcards."""
         query = "SELECT cs_name, domain, family, member, name FROM att_names"
         attrs = []
-
         cluster = Cluster(self.hdb_cluster)
         session = cluster.connect("hdb")
-
         for row in self.execute_cql_querry(session, query):
             if self.hdb_name in row.cs_name:
                 attr = "/".join((row.domain, row.family, row.member, row.name))
@@ -46,13 +45,14 @@ class CassImp:
         return matches
 
     def execute_cql_querry(self, session, cql_querry):
+        """Function to obtain the CQL."""
         prepared_request = session.prepare(cql_querry)
         gen = session.execute(prepared_request)
         cql_rows = [row for row in gen]
         return cql_rows
 
     def get_att_data_type(self, att_conf_id, session):
-        """ Return HDB++ data_type from an att_conf_id """
+        """Return HDB++ data_type from an att_conf_id."""
         cql_querry = "SELECT data_type FROM att_conf WHERE att_conf_id = {}"
         cql_querry += " ALLOW FILTERING"
         cql_querry = cql_querry.format(att_conf_id)
@@ -61,7 +61,7 @@ class CassImp:
         return data_type
 
     def get_att_conf_id(self, attr_name, session):
-        """ Return the HDB++ att_conf_id for one attribute """
+        """Return the HDB++ att_conf_id for one attribute."""
         cql_querry = "SELECT att_conf_id FROM att_conf WHERE att_name= '{}'"
         cql_querry += " ALLOW FILTERING"
         cql_querry = cql_querry.format(attr_name)
@@ -76,14 +76,20 @@ class CassImp:
         return att_conf_id
 
     def get_data(self, data_type, att_id, period):
-            query = "SELECT * from att_{} WHERE att_conf_id = {} and period = '{}'"
-            select_period = query.format(data_type, att_id, period)
-            cluster = Cluster(self.hdb_cluster)
-            session = cluster.connect("hdb")
-            data = self.execute_cql_querry(session, select_period)
-            return data
+        """Query to get data."""
+        query = "SELECT * from att_{} WHERE att_conf_id = {} and period = '{}'"
+        select_period = query.format(data_type, att_id, period)
+        cluster = Cluster(self.hdb_cluster)
+        session = cluster.connect("hdb")
+        data = self.execute_cql_querry(session, select_period)
+        return data
 
     def readingdata(self,inp1,inp2,inp3):
+        """Reading the data.
+        Inp1 = name of the attribute.
+        Inp2 = start time of the period.
+        Inp3 = End time of the period.
+        """
         attr_name = inp1
         period_start =  datetime.strptime(inp2, "%Y-%m-%d")
         if inp3 == 'now':
