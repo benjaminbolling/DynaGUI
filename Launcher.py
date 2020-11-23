@@ -76,8 +76,10 @@ elif packagefailure[0] == 0:
         packagefailure[4] = 1
 
 class Dialog(QtGui.QWidget):
-    # This is the class in which the DynaGUI window is constructed
+    """This is the class in which the DynaGUI Launcher window is constructed."""
     def __init__(self, packagefailure,parent=None):
+        """Initialization of the DynaGUI Launcher.
+        The packagefailure array is inherited from before QWidget was initialized, in which packages to show as enabled or disabled are defined."""
         super(Dialog, self).__init__(parent)
         QtGui.QDialog.__init__(self)
         # Create the layout
@@ -116,7 +118,7 @@ class Dialog(QtGui.QWidget):
             self.financeAlarms.setEnabled(False)
             self.financeAlarms.setToolTip("Import of finance required Python packages (matplotlib backends, pandas, pandas_datareader) failed.")
     def createLayout(self):
-        # Create the main layout
+        """Create the main layout of the DynaGUI Launcher window."""
         self.setWindowTitle("DynaGUI")
         self.dialogs = list()
         self.toplayout = QtGui.QVBoxLayout(self)
@@ -222,88 +224,88 @@ class Dialog(QtGui.QWidget):
         self.horizlayout1.addWidget(self.conffilepath)
         self.horizlayout1.addWidget(self.conffilebtn)
     def viewdataNVclicked(self):
-        # Launch DynaGUI NV with historical data viewer
+        """Launch DynaGUI NV with historical data viewer."""
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
         os.system("python "+dirpath+"/dynagui_files/DynaGUI_NV.py 'HistoricalData' "+fp+"&")
         self.close()
         print("View data NV clicked")
     def epicsNVclicked(self):
-        # Launch DynaGUI NV with the EPICS control library
+        """Launch DynaGUI NV with the EPICS control library."""
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
         os.system("python "+dirpath+"/dynagui_files/DynaGUI_NV.py 'EPICS' "+fp+"&")
         self.close()
         print("EPICS NV clicked")
     def epicsTFclicked(self):
-        # Launch DynaGUI TF with the EPICS control library
+        """Launch DynaGUI TF with the EPICS control library."""
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
         os.system("python "+dirpath+"/dynagui_files/DynaGUI_TF.py 'EPICS' "+fp+"&")
         print("EPICS TF clicked")
     def epicsAlarmsclicked(self):
-        # Launch DynaGUI Alarms with the EPICS control library
+        """Launch DynaGUI Alarms with the EPICS control library."""
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
         os.system("python "+dirpath+"/dynagui_files/DynaGUI_Alarms.py 'EPICS' "+fp+"&")
         print("EPICS Alarms clicked")
     def tangoNVclicked(self):
-        # Launch DynaGUI NV with the Tango control library
+        """Launch DynaGUI NV with the Tango control library."""
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
         os.system("python "+dirpath+"/dynagui_files/DynaGUI_NV.py 'Tango' "+fp+"&")
         print("Tango NV clicked")
     def tangoTFclicked(self):
-        # Launch DynaGUI TF with the Tango control library
+        """Launch DynaGUI TF with the Tango control library."""
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
         os.system("python "+dirpath+"/dynagui_files/DynaGUI_TF.py 'Tango' "+fp+"&")
         print("Tango TF clicked")
     def tangoAlarmsclicked(self):
-        # Launch DynaGUI Alarms with the Tango control library
+        """Launch DynaGUI Alarms with the Tango control library."""
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
         os.system("python "+dirpath+"/dynagui_files/DynaGUI_Alarms.py 'Tango' "+fp+"&")
         print("Tango Alarms clicked")
     def financeNVclicked(self):
-        # Launch DynaGUI NV with the Finance control library
+        """Launch DynaGUI NV with the Finance control library."""
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
         os.system("python "+dirpath+"/dynagui_files/DynaGUI_NV.py 'Finance' "+fp+"&")
         print("Finance NV clicked")
     def financeAlarmsclicked(self):
-        # Launch DynaGUI Alarms with the Finance control library
+        """Launch DynaGUI Alarms with the Finance control library."""
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
         os.system("python "+dirpath+"/dynagui_files/DynaGUI_Alarms.py 'Finance' "+fp+"&")
         print("Finance Alarms clicked")
     def randomNVclicked(self):
-        # Launch DynaGUI NV with the Random control library
+        """Launch DynaGUI NV with the Random control library."""
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
         os.system("python "+dirpath+"/dynagui_files/DynaGUI_NV.py 'Randomizer' "+fp+"&")
         print("Random NV clicked")
     def randomTFclicked(self):
-        # Launch DynaGUI TF with the Random control library
+        """Launch DynaGUI TF with the Random control library."""
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
         os.system("python "+dirpath+"/dynagui_files/DynaGUI_TF.py 'Randomizer' "+fp+"&")
         print("Random TF clicked")
     def randomAlarmsclicked(self):
-        # Launch DynaGUI Alarms with the Random control library
+        """Launch DynaGUI Alarms with the Random control library."""
         dirpath = os.path.abspath(os.path.dirname(__file__))
         fp = str(self.conffilepath.text())
         os.system("python "+dirpath+"/dynagui_files/DynaGUI_Alarms.py 'Randomizer' "+fp+"&")
         print("Random Alarms clicked")
     def browseFilesClicked(self):
-        # Find a configuration file to launch a DynaGUI package with
+        """Find a configuration file to launch a DynaGUI package with."""
         dirpath = os.path.abspath(os.path.dirname(__file__))
         nameoffile = QtGui.QFileDialog.getOpenFileName(self, 'Load File', dirpath+'/dynagui_files/ConfFiles')
         if len(nameoffile) > 1:
             nameoffile = str(nameoffile[0])
         self.conffilepath.setText(nameoffile)
 if __name__ == '__main__':
-    # The GUI is being been launched, no input arguments used
+    """The GUI is being been launched, no input arguments used."""
     if packagefailure[0] == 0:
         app = QtGui.QApplication(sys.argv)
         window = Dialog(packagefailure)
