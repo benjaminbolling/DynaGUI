@@ -41,7 +41,7 @@ The package aims to enable users to construct dynamic GUI:s for multiple purpose
 
 # Figures
 
-![A dynamic control panel of DynaGUI NV has been configured (top-left), from which a 1D realtime plot has been launched for 4 artificial devices for a made-up attribute (right). Using this tool, two other lines have been set up as functions of two input data streams, with equations defined in the bottom-left figure and then plotted.](figure1.png)
+![A dynamic control panel of DynaGUI NV has been configured (top-left), from which a 1D realtime plot has been launched for 4 artificial devices for a made-up attribute (right). Using this tool, two other lines have been set up as functions of two input data streams, with equations defined in the bottom-left figure and then plotted.](figureNV.png)
 
 # Acknowledgements
 The author wants to thank Bernhard Meirose, Accelerator Operator at the MAX IV Laboratory, for the discussion that inspired and lead me into developing this package. The author also recognises and wants to thank Jonas Petersson and Robin Svard at the MAX IV Laboratory for developing the original 2D Spectrogram Application for monitoring transverse beam position via Beam Position Monitors at the MAX IV Laboratory storage rings. The author also wants to thank Bernhard Meirose at the MAX IV Laboratory for giving the inspiration and awakening the idea to creating this package.
