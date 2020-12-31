@@ -1,3 +1,4 @@
+[![DOI](https://joss.theoj.org/papers/10.21105/joss.01942/status.svg)](https://doi.org/10.21105/joss.01942)
 # DynaGUI README
 
 DynaGUI stands for Dynamic Graphical User Interface and is a method to construct temporary, permanent and/or a set of GUI:s for users in a simple and fast manner. Developed during shift works at a particle accelerator, the initial goal was to fill in some functions that were then missing: Fast dynamic construction of new control system GUI:s for various purposes.
